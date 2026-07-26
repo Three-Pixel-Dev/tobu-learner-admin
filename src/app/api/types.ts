@@ -6,6 +6,13 @@ export interface ApiResponse<T> {
   meta: unknown
 }
 
+export interface PageMeta {
+  page: number
+  size: number
+  totalElements: number
+  totalPages: number
+}
+
 export interface AuthUser {
   userId: number
   email: string
@@ -45,4 +52,21 @@ export interface AuthMessageDto {
   message: string
   success: boolean
   otp: string | null
+}
+
+export interface UserAdminDto {
+  id: number
+  name: string
+  email: string
+  level: string | null
+  currentStreak: number
+  totalXp: number
+  ban: boolean
+  deleted: boolean
+  updatedAt: string
+  createdAt: string
+}
+
+export interface UserListMeta extends PageMeta {
+  activeCount: number
 }
