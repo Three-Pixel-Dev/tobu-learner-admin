@@ -64,6 +64,10 @@ export const kanjiService = {
     return unwrap(http.post<ApiResponse<KanjiDto>>('/api/v1/admin/kanji', payload))
   },
 
+  createBatch(payloads: CreateKanjiPayload[]) {
+    return unwrap(http.post<ApiResponse<KanjiDto[]>>('/api/v1/admin/kanji/batch', payloads))
+  },
+
   update(id: number, payload: UpdateKanjiPayload) {
     return unwrap(http.put<ApiResponse<KanjiDto>>(`/api/v1/admin/kanji/${id}`, payload))
   },

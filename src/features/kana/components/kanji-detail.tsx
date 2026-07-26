@@ -7,6 +7,7 @@ import { kanjiService, type KanjiDto, type CreateKanjiPayload } from '@/shared/s
 import { jlptLevelService, type JlptLevelDto } from '@/shared/services/jlpt-level.service'
 import { fetchKanjiVgData, parseCustomSvgString } from '@/features/kana/components/kanjivg-importer'
 import { KanjiPreviewCanvas } from '@/features/kana/components/kanji-preview-canvas'
+import { KanjiBatchModal } from '@/features/kana/components/kanji-batch-modal'
 
 export function KanjiDetail() {
   const [kanjiList, setKanjiList] = useState<KanjiDto[]>([])
@@ -15,7 +16,7 @@ export function KanjiDetail() {
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(false)
 
-  // Modal / Editor state
+  // Single Modal state
   const [showModal, setShowModal] = useState(false)
   const [editingItem, setEditingItem] = useState<KanjiDto | null>(null)
   const [charInput, setCharInput] = useState('')
@@ -24,11 +25,18 @@ export function KanjiDetail() {
   const [kunyomiInput, setKunyomiInput] = useState('')
   const [meaningMmInput, setMeaningMmInput] = useState('')
   const [meaningEnInput, setMeaningEnInput] = useState('')
-  const [strokeCountInput, setStrokeCountInput] = useState<number>(1)
+  const [strokeCountInput, setStrokeCountInput] = useState<number>(0)
   const [strokeJsonInput, setStrokeJsonInput] = useState<Record<string, any>>({ strokes: [] })
-  
-  // Advanced SVG / Fallback input
+
+  // Batch Upload Modal state
+  const [showBatchModal, setShowBatchModal] = useState(false)
+
+  // Canvas Mode: 'record' (draw strokes manually) or 'test' (verify learner tracing)
+  const [canvasMode, setCanvasMode] = useState<'record' | 'test'>('record')
+
+  // Advanced SVG / Developer JSON toggles (hidden by default)
   const [showSvgInput, setShowSvgInput] = useState(false)
+  const [showJsonEditor, setShowJsonEditor] = useState(false)
   const [customSvgText, setCustomSvgText] = useState('')
   const [importLoading, setImportLoading] = useState(false)
 
@@ -62,10 +70,12 @@ export function KanjiDetail() {
     setKunyomiInput('')
     setMeaningMmInput('')
     setMeaningEnInput('')
-    setStrokeCountInput(1)
+    setStrokeCountInput(0)
     setStrokeJsonInput({ strokes: [] })
     setCustomSvgText('')
     setShowSvgInput(false)
+    setShowJsonEditor(false)
+    setCanvasMode('record')
     setShowModal(true)
   }
 
@@ -77,10 +87,12 @@ export function KanjiDetail() {
     setKunyomiInput(item.kunyomi || '')
     setMeaningMmInput(item.meaningMm || '')
     setMeaningEnInput(item.meaningEn || '')
-    setStrokeCountInput(item.strokeCount || 1)
+    setStrokeCountInput(item.strokeCount || item.strokeOrderJson?.strokes?.length || 0)
     setStrokeJsonInput(item.strokeOrderJson || { strokes: [] })
     setCustomSvgText('')
     setShowSvgInput(false)
+    setShowJsonEditor(false)
+    setCanvasMode('test')
     setShowModal(true)
   }
 
@@ -92,11 +104,11 @@ export function KanjiDetail() {
       if (res && res.strokeCount > 0) {
         setStrokeCountInput(res.strokeCount)
         setStrokeJsonInput(res.strokeOrderJson)
+        setCanvasMode('test')
       } else {
-        // Fallback prompt for rare / complex character
         setShowSvgInput(true)
         alert(
-          `Character '${charInput}' is rare or complex and not indexed in KanjiVG CDN.\n\nPlease paste raw SVG code below or click "Add Manual Stroke" to define stroke paths.`
+          `Character '${charInput}' is rare or complex and not indexed in KanjiVG CDN.\n\nYou can draw strokes directly on the canvas below in '🔴 Record Mode' or paste SVG markup.`
         )
       }
     } catch (err) {
@@ -112,19 +124,16 @@ export function KanjiDetail() {
     if (res && res.strokeCount > 0) {
       setStrokeCountInput(res.strokeCount)
       setStrokeJsonInput(res.strokeOrderJson)
+      setCanvasMode('test')
       alert(`Successfully parsed ${res.strokeCount} strokes from custom SVG!`)
     } else {
       alert('Could not parse valid <path> stroke elements from the pasted SVG string.')
     }
   }
 
-  const handleAddDefaultStroke = () => {
+  const handleStrokeRecorded = (newStrokePoints: number[][]) => {
     const existingStrokes: number[][][] = strokeJsonInput?.strokes || []
-    const newStroke = [
-      [15, 50],
-      [85, 50],
-    ]
-    const updated = [...existingStrokes, newStroke]
+    const updated = [...existingStrokes, newStrokePoints]
     setStrokeCountInput(updated.length)
     setStrokeJsonInput({ ...strokeJsonInput, strokes: updated })
   }
@@ -200,7 +209,12 @@ export function KanjiDetail() {
           </select>
         </div>
 
-        <Button onClick={openCreateModal}>+ Add New Kanji</Button>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" onClick={() => setShowBatchModal(true)}>
+            📦 Batch Upload Kanji
+          </Button>
+          <Button onClick={openCreateModal}>+ Add New Kanji</Button>
+        </div>
       </div>
 
       {/* Kanji Cards Grid */}
@@ -208,16 +222,15 @@ export function KanjiDetail() {
         <div className="py-8 text-center text-xs text-subtle">Loading Kanji data...</div>
       ) : kanjiList.length === 0 ? (
         <div className="rounded-xl border border-dashed p-8 text-center text-xs text-subtle">
-          No Kanji items found. Click "+ Add New Kanji" to create one.
+          No Kanji items found. Click "+ Add New Kanji" or "📦 Batch Upload Kanji" to create.
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {kanjiList.map((item) => (
             <div
               key={item.id}
-              className={`rounded-2xl border bg-white p-4 shadow-sm transition-all ${
-                item.deleted ? 'opacity-50' : 'hover:border-emerald-300'
-              }`}
+              className={`rounded-2xl border bg-white p-4 shadow-sm transition-all ${item.deleted ? 'opacity-50' : 'hover:border-emerald-300'
+                }`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
@@ -270,7 +283,16 @@ export function KanjiDetail() {
         </div>
       )}
 
-      {/* Add / Edit Kanji Modal */}
+      {/* Batch Upload Modal */}
+      {showBatchModal && (
+        <KanjiBatchModal
+          levels={levels}
+          onClose={() => setShowBatchModal(false)}
+          onSuccess={loadData}
+        />
+      )}
+
+      {/* Single Add / Edit Kanji Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl">
@@ -293,7 +315,7 @@ export function KanjiDetail() {
                     <Input
                       value={charInput}
                       onChange={(e) => setCharInput(e.target.value)}
-                      placeholder="e.g. 水 or 𱁬"
+                      placeholder="e.g. 木 or 水"
                       className="text-center font-bold text-lg"
                     />
                     <Button onClick={handleAutoImportKanjiVg} disabled={importLoading} variant="ghost">
@@ -318,39 +340,52 @@ export function KanjiDetail() {
 
               <FieldRow>
                 <Field label="On'yomi (音読み)">
-                  <Input value={onyomiInput} onChange={(e) => setOnyomiInput(e.target.value)} placeholder="e.g. スイ" />
+                  <Input value={onyomiInput} onChange={(e) => setOnyomiInput(e.target.value)} placeholder="e.g. モク" />
                 </Field>
                 <Field label="Kun'yomi (訓読み)">
-                  <Input value={kunyomiInput} onChange={(e) => setKunyomiInput(e.target.value)} placeholder="e.g. みず" />
+                  <Input value={kunyomiInput} onChange={(e) => setKunyomiInput(e.target.value)} placeholder="e.g. き" />
                 </Field>
               </FieldRow>
 
               <FieldRow>
                 <Field label="Meaning (Myanmar)">
-                  <Input value={meaningMmInput} onChange={(e) => setMeaningMmInput(e.target.value)} placeholder="e.g. ရေ" />
+                  <Input value={meaningMmInput} onChange={(e) => setMeaningMmInput(e.target.value)} placeholder="e.g. သစ်ပင်" />
                 </Field>
                 <Field label="Meaning (English)">
-                  <Input value={meaningEnInput} onChange={(e) => setMeaningEnInput(e.target.value)} placeholder="e.g. water" />
+                  <Input value={meaningEnInput} onChange={(e) => setMeaningEnInput(e.target.value)} placeholder="e.g. tree" />
                 </Field>
               </FieldRow>
 
-              {/* Stroke Order Toolbar */}
-              <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-sky-50 p-3">
-                <div className="text-xs font-bold text-sky-900">
-                  Stroke Count: {strokeJsonInput?.strokes?.length || 0}
-                </div>
-                <div className="flex items-center gap-2">
+              {/* Canvas Mode Selector & Controls */}
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-gray-100 p-2">
+                <div className="flex rounded-xl bg-white p-1 shadow-sm">
                   <button
                     type="button"
-                    onClick={handleAddDefaultStroke}
-                    className="rounded-lg bg-emerald-600 px-3 py-1 text-xs font-bold text-white hover:bg-emerald-700"
+                    onClick={() => setCanvasMode('record')}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${canvasMode === 'record'
+                        ? 'bg-orange-600 text-white shadow'
+                        : 'text-gray-600 hover:text-gray-900'
+                      }`}
                   >
-                    + Add Stroke Line
+                    🔴 Draw & Record Mode
                   </button>
                   <button
                     type="button"
+                    onClick={() => setCanvasMode('test')}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${canvasMode === 'test'
+                        ? 'bg-emerald-600 text-white shadow'
+                        : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                  >
+                    🧪 Test Verification Mode
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
                     onClick={() => setShowSvgInput(!showSvgInput)}
-                    className="rounded-lg bg-sky-600 px-3 py-1 text-xs font-bold text-white hover:bg-sky-700"
+                    className="rounded-lg bg-sky-100 px-3 py-1 text-xs font-bold text-sky-800 hover:bg-sky-200"
                   >
                     📋 {showSvgInput ? 'Hide SVG Box' : 'Paste Custom SVG'}
                   </button>
@@ -359,7 +394,7 @@ export function KanjiDetail() {
                     onClick={handleClearStrokes}
                     className="rounded-lg bg-red-100 px-3 py-1 text-xs font-bold text-red-700 hover:bg-red-200"
                   >
-                    🧹 Clear All
+                    🧹 Clear ({strokeJsonInput?.strokes?.length || 0})
                   </button>
                 </div>
               </div>
@@ -373,8 +408,8 @@ export function KanjiDetail() {
                   <textarea
                     value={customSvgText}
                     onChange={(e) => setCustomSvgText(e.target.value)}
-                    placeholder="Paste <svg>...</svg> or <path d='...' /> markup here from Illustrator, Figma, or Wikimedia..."
-                    rows={4}
+                    placeholder="Paste <svg>...</svg> or <path d='...' /> markup here..."
+                    rows={3}
                     className="w-full rounded-xl border border-sky-200 bg-white p-3 font-mono text-xs text-gray-800"
                   />
                   <div className="mt-2 flex justify-end">
@@ -389,30 +424,46 @@ export function KanjiDetail() {
                 </div>
               )}
 
-              {/* Stroke Order Verification Canvas */}
-              <div className="rounded-2xl border bg-gray-50 p-4">
+              {/* Interactive Canvas */}
+              <div className="rounded-2xl border bg-gray-50 p-4 flex flex-col items-center">
                 <div className="mb-2 text-xs font-bold text-gray-700">
-                  Interactive Stroke Verification Canvas
+                  {canvasMode === 'record'
+                    ? '🔴 Draw with your mouse/finger on top of the ghost character to record each stroke!'
+                    : '🧪 Tracing Verification Mode (Practice drawing recorded strokes)'}
                 </div>
                 <KanjiPreviewCanvas
-                  character={charInput || '字'}
+                  character={charInput || '木'}
                   strokes={strokeJsonInput?.strokes || []}
+                  mode={canvasMode}
+                  onStrokeRecorded={handleStrokeRecorded}
+                  onClearStrokes={handleClearStrokes}
                 />
               </div>
 
-              {/* Raw JSON Matrix Editor */}
-              <Field label="Stroke Order JSON Data">
-                <textarea
-                  value={JSON.stringify(strokeJsonInput, null, 2)}
-                  onChange={(e) => {
-                    try {
-                      setStrokeJsonInput(JSON.parse(e.target.value))
-                    } catch {}
-                  }}
-                  rows={4}
-                  className="w-full rounded-xl border bg-gray-900 p-3 font-mono text-xs text-emerald-400"
-                />
-              </Field>
+              {/* Developer JSON Matrix Editor (Hidden by default) */}
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowJsonEditor(!showJsonEditor)}
+                  className="text-xs font-semibold text-gray-500 hover:text-gray-800 underline"
+                >
+                  {showJsonEditor ? '⚙️ Hide Raw JSON Data' : '⚙️ Advanced Developer JSON Data (Optional)'}
+                </button>
+                {showJsonEditor && (
+                  <div className="mt-2">
+                    <textarea
+                      value={JSON.stringify(strokeJsonInput, null, 2)}
+                      onChange={(e) => {
+                        try {
+                          setStrokeJsonInput(JSON.parse(e.target.value))
+                        } catch { }
+                      }}
+                      rows={3}
+                      className="w-full rounded-xl border bg-gray-900 p-3 font-mono text-xs text-emerald-400"
+                    />
+                  </div>
+                )}
+              </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t">
                 <Button variant="ghost" onClick={() => setShowModal(false)}>
