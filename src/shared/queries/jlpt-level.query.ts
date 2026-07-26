@@ -54,6 +54,14 @@ export function useSetJlptLevelUnlockedMutation() {
   })
 }
 
+export function useSetJlptLevelHotMutation() {
+  const invalidate = useInvalidateJlptLevels()
+  return useMutation({
+    mutationFn: ({ id, hot }: { id: number; hot: boolean }) => jlptLevelService.setHot(id, hot),
+    onSuccess: invalidate,
+  })
+}
+
 export function useSoftDeleteJlptLevelMutation() {
   const invalidate = useInvalidateJlptLevels()
   return useMutation({
