@@ -2,8 +2,7 @@ import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select } from '@/components/ui/select'
-import { listJapaneseVoices, speakKana } from '@/features/kana/kana-tts'
+import { speakKana } from '@/features/kana/kana-tts'
 import type { KanaDto, KanaType } from '@/shared/services/kana.service'
 import { cn } from '@/util/cn'
 
@@ -45,8 +44,6 @@ export function KanaDrawer({
     {},
   )
   const [formAlert, setFormAlert] = useState<string | null>(null)
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([])
-  const [voiceURI, setVoiceURI] = useState('')
 
   const deleted = Boolean(initial?.deleted)
   const typeLabel = type === 'HIRAGANA' ? 'Hiragana' : 'Katakana'
@@ -64,18 +61,6 @@ export function KanaDrawer({
     }, 50)
     return () => window.clearTimeout(timer)
   }, [open, initial])
-
-  useEffect(() => {
-    if (!open) return
-    const refresh = () => {
-      const ja = listJapaneseVoices()
-      setVoices(ja)
-      setVoiceURI((prev) => prev || ja[0]?.voiceURI || '')
-    }
-    refresh()
-    window.speechSynthesis?.addEventListener('voiceschanged', refresh)
-    return () => window.speechSynthesis?.removeEventListener('voiceschanged', refresh)
-  }, [open])
 
   useEffect(() => {
     if (!open) return
@@ -118,7 +103,7 @@ export function KanaDrawer({
       panelRef.current?.querySelector<HTMLInputElement>('input')?.focus()
       return
     }
-    speakKana(ch, voiceURI || undefined)
+    speakKana(ch)
   }
 
   return (
@@ -225,37 +210,16 @@ export function KanaDrawer({
               />
             </div>
 
-            <div className="mb-[8px]">
-              <label className="mb-[6px] block text-[12.5px] font-semibold" htmlFor="kana-voice">
+            <div className="mb-[16px] rounded-xl bg-sky-50 p-3 border border-sky-200">
+              <label className="mb-[4px] block text-[12.5px] font-bold text-sky-900">
                 Pronunciation preview
               </label>
-              <div className="flex gap-[8px]">
-                <Select
-                  id="kana-voice"
-                  value={voiceURI}
-                  disabled={voices.length === 0}
-                  onChange={(e) => setVoiceURI(e.target.value)}
-                  className="flex-1"
-                >
-                  {voices.length === 0 ? (
-                    <option value="">No Japanese voice found</option>
-                  ) : (
-                    voices.map((v) => (
-                      <option key={v.voiceURI} value={v.voiceURI}>
-                        {v.name} ({v.lang})
-                      </option>
-                    ))
-                  )}
-                </Select>
-                <Button type="button" variant="ghost" onClick={listenPreview}>
-                  🔊 Listen
-                </Button>
-              </div>
-              {voices.length === 0 ? (
-                <p className="mt-[6px] text-[11.5px] text-warning-foreground">
-                  Install a Japanese voice in your OS for clearer previews.
-                </p>
-              ) : null}
+              <p className="mb-[8px] text-[11px] text-sky-700">
+                Uses the default system Japanese voice.
+              </p>
+              <Button type="button" variant="ghost" onClick={listenPreview} className="w-full">
+                🔊 Listen
+              </Button>
             </div>
           </div>
 
