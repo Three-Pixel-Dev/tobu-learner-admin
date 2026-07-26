@@ -1,26 +1,50 @@
-import { Field } from '@/components/common/field'
+import { useCallback, useState } from 'react'
+
+import { getApiErrorMessage } from '@/app/api/http-client'
 import { PageHeader } from '@/components/common/page-header'
-import { Button } from '@/components/ui/button'
-import { Panel, PanelHead, PanelTitle } from '@/components/ui/panel'
-import { Textarea } from '@/components/ui/textarea'
-import { CONTENT_BLOCKS } from '@/features/content/content.mock'
+import { Toast } from '@/components/common/toast'
+import { ContentBlockPanel } from '@/features/content/components/content-block-panel'
+import { ContentSkeleton } from '@/features/content/components/content-skeleton'
+import { useContentListQuery } from '@/shared/queries/content.query'
 
 export function ContentPage() {
+  const contentQuery = useContentListQuery()
+  const [toast, setToast] = useState<string | null>(null)
+
+  const onSaved = useCallback((message: string) => {
+    setToast(message)
+  }, [])
+
+  if (contentQuery.isLoading) {
+    return <ContentSkeleton />
+  }
+
+  if (contentQuery.isError) {
+    return (
+      <>
+        <PageHeader title="Content pages" subtitle="Static app content shown to users" />
+        <p className="rounded-[12px] border border-[#FCA5A5] bg-destructive-soft px-[14px] py-[12px] text-[13px] font-semibold text-destructive" role="alert">
+          {getApiErrorMessage(contentQuery.error, 'Failed to load content pages.')}
+        </p>
+      </>
+    )
+  }
+
+  const items = contentQuery.data ?? []
+
   return (
     <>
       <PageHeader title="Content pages" subtitle="Static app content shown to users" />
 
-      {CONTENT_BLOCKS.map((block) => (
-        <Panel key={block.id}>
-          <PanelHead>
-            <PanelTitle>{block.title}</PanelTitle>
-            <Button variant="ghost">✎ Edit</Button>
-          </PanelHead>
-          <Field>
-            <Textarea rows={block.rows} defaultValue={block.body} />
-          </Field>
-        </Panel>
+      {items.length === 0 ? (
+        <p className="text-[13px] text-muted-foreground">No content pages found.</p>
+      ) : null}
+
+      {items.map((item) => (
+        <ContentBlockPanel key={item.id} content={item} onSaved={onSaved} />
       ))}
+
+      <Toast message={toast} onDismiss={() => setToast(null)} />
     </>
   )
 }
