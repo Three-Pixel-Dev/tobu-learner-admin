@@ -1,4 +1,5 @@
 import { useDeferredValue, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 
 import { getApiErrorMessage } from '@/app/api/http-client'
 import type { UserAdminDto } from '@/app/api/types'
@@ -50,7 +51,8 @@ function toRowView(user: UserAdminDto) {
 }
 
 export function UsersPage() {
-  const [keyword, setKeyword] = useState('')
+  const [searchParams] = useSearchParams()
+  const [keyword, setKeyword] = useState(() => searchParams.get('q') ?? '')
   const [pageNumber, setPageNumber] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [toast, setToast] = useState<string | null>(null)

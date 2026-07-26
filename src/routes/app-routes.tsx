@@ -47,6 +47,20 @@ const RemindersPage = lazy(() =>
 const ContentPage = lazy(() =>
   import('@/features/content/pages/content-page').then((m) => ({ default: m.ContentPage })),
 )
+const NotFoundPage = lazy(() =>
+  import('@/features/errors/pages/not-found-page').then((m) => ({ default: m.NotFoundPage })),
+)
+const ServerErrorPage = lazy(() =>
+  import('@/features/errors/pages/server-error-page').then((m) => ({ default: m.ServerErrorPage })),
+)
+const ServiceUnavailablePage = lazy(() =>
+  import('@/features/errors/pages/service-unavailable-page').then((m) => ({
+    default: m.ServiceUnavailablePage,
+  })),
+)
+const StatusPage = lazy(() =>
+  import('@/features/errors/pages/status-page').then((m) => ({ default: m.StatusPage })),
+)
 
 interface PageBoundaryProps {
   /** The feature's own skeleton — never a generic one. */
@@ -160,6 +174,39 @@ export function AppRoutes() {
           />
         </Route>
       </Route>
+
+      <Route
+        path="500"
+        element={
+          <Suspense fallback={null}>
+            <ServerErrorPage />
+          </Suspense>
+        }
+      />
+      <Route
+        path="503"
+        element={
+          <Suspense fallback={null}>
+            <ServiceUnavailablePage />
+          </Suspense>
+        }
+      />
+      <Route
+        path="status"
+        element={
+          <Suspense fallback={null}>
+            <StatusPage />
+          </Suspense>
+        }
+      />
+      <Route
+        path="*"
+        element={
+          <Suspense fallback={null}>
+            <NotFoundPage />
+          </Suspense>
+        }
+      />
     </Routes>
   )
 }

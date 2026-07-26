@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
 import { getApiErrorMessage } from '@/app/api/http-client'
+import { isServiceUnavailableError } from '@/app/api/service-unavailable'
 import { Field } from '@/components/common/field'
 import { PasswordInput } from '@/components/common/password-input'
 import { AuthLayout } from '@/components/layouts/auth-layout'
@@ -33,7 +34,10 @@ export function LoginPage() {
     login.mutate(values)
   })
 
-  const errorMessage = login.error ? getApiErrorMessage(login.error, login.error.message) : null
+  const errorMessage =
+    login.error && !isServiceUnavailableError(login.error)
+      ? getApiErrorMessage(login.error, login.error.message)
+      : null
 
   return (
     <AuthLayout>

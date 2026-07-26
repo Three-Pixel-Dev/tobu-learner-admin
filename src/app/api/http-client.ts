@@ -2,6 +2,10 @@ import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios'
 
 import { env } from '@/app/config/env'
 import type { ApiResponse, LoginDto } from '@/app/api/types'
+import {
+  isServiceUnavailableError,
+  redirectToServiceUnavailable,
+} from '@/app/api/service-unavailable'
 import { useAuthStore } from '@/shared/stores/auth.store'
 
 export const http = axios.create({
@@ -46,7 +50,11 @@ async function refreshAccessToken(): Promise<string | null> {
       role: login.role,
     })
     return login.accessToken
-  } catch {
+  } catch (error) {
+    if (isServiceUnavailableError(error)) {
+      redirectToServiceUnavailable()
+      return null
+    }
     clearSessionAndRedirect()
     return null
   }
@@ -63,6 +71,11 @@ http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 http.interceptors.response.use(
   (response) => response,
   async (error: AxiosError<ApiResponse<unknown>>) => {
+    if (isServiceUnavailableError(error)) {
+      redirectToServiceUnavailable()
+      return Promise.reject(error)
+    }
+
     const original = error.config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined
     const status = error.response?.status
     const url = original?.url ?? ''
