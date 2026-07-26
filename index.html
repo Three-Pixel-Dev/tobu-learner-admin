@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Noto+Sans+Myanmar:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <title>Tobu Admin</title>
+
+    <!--
+      Critical splash styles are inlined here on purpose: this state paints
+      before the CSS bundle loads, so it cannot use the theme tokens from
+      globals.css. Keep the values in sync with @theme there.
+    -->
+    <style>
+      #splash {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 22px;
+        padding: 24px;
+        text-align: center;
+        background: #fffbf0;
+        color: #0f172a;
+        font-family: 'Inter', 'Noto Sans Myanmar', 'Padauk', system-ui, sans-serif;
+        transition: opacity 0.3s ease;
+      }
+      #splash.is-hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .splash-mark-wrap {
+        position: relative;
+        width: 88px;
+        height: 88px;
+      }
+      .splash-mark {
+        display: flex;
+        width: 88px;
+        height: 88px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 26px;
+        background: #22c55e;
+        font-size: 44px;
+        box-shadow: 0 10px 26px rgba(34, 197, 94, 0.3);
+        animation: splash-bob 1.8s ease-in-out infinite;
+      }
+      /* Spinning ring gives a second, independent "in progress" cue. */
+      .splash-ring {
+        position: absolute;
+        inset: -8px;
+        border-radius: 34px;
+        border: 3px solid #dcfce7;
+        border-top-color: #22c55e;
+        animation: splash-spin 1s linear infinite;
+      }
+
+      .splash-brand {
+        font-family: 'Fredoka', 'Noto Sans Myanmar', 'Padauk', system-ui, sans-serif;
+        font-size: 24px;
+        font-weight: 700;
+      }
+      .splash-brand span {
+        color: #ca8a04;
+      }
+      .splash-tagline {
+        margin: 2px 0 0;
+        font-size: 13.5px;
+        color: #4b5563;
+      }
+
+      /* Indeterminate bar: role="progressbar" without aria-valuenow is the
+         WAI-ARIA signal for "indeterminate" to assistive tech. */
+      .splash-track {
+        position: relative;
+        width: 220px;
+        height: 8px;
+        overflow: hidden;
+        border-radius: 20px;
+        background: #f3f4f6;
+      }
+      .splash-fill {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 40%;
+        border-radius: 20px;
+        background: #22c55e;
+        animation: splash-indeterminate 1.3s ease-in-out infinite;
+      }
+
+      .splash-status {
+        margin: 0;
+        min-height: 16px;
+        font-size: 12.5px;
+        color: #4b5563;
+      }
+
+      /* Slow-connection note — revealed by script after a delay. */
+      .splash-slow {
+        display: none;
+        max-width: 280px;
+        margin: 0;
+        border: 1px solid #ffd34d;
+        border-radius: 10px;
+        padding: 8px 14px;
+        background: #fff7db;
+        font-size: 12px;
+        color: #b45309;
+      }
+      .splash-slow.is-visible {
+        display: block;
+      }
+      .splash-slow a {
+        color: #b45309;
+        font-weight: 600;
+      }
+
+      @keyframes splash-bob {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-6px);
+        }
+      }
+      @keyframes splash-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @keyframes splash-indeterminate {
+        0% {
+          left: -40%;
+        }
+        100% {
+          left: 100%;
+        }
+      }
+      @keyframes splash-pulse {
+        0%,
+        100% {
+          opacity: 0.55;
+        }
+        50% {
+          opacity: 1;
+        }
+      }
+
+      /* Reduced motion still gets feedback — a gentle pulse replaces the
+         bounce/spin/slide rather than removing the cue entirely. */
+      @media (prefers-reduced-motion: reduce) {
+        .splash-mark,
+        .splash-ring,
+        .splash-fill {
+          animation: none !important;
+        }
+        .splash-ring {
+          border-top-color: #dcfce7;
+        }
+        .splash-fill {
+          position: static;
+          width: 60%;
+          animation: splash-pulse 1.6s ease-in-out infinite !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <!-- Cold-start splash: painted before the app bundle boots, removed by
+         src/util/splash.ts once React has mounted. -->
+    <div id="splash">
+      <div class="splash-mark-wrap" aria-hidden="true">
+        <div class="splash-ring"></div>
+        <div class="splash-mark">🦉</div>
+      </div>
+
+      <div>
+        <div class="splash-brand">Tobu <span>Admin</span></div>
+        <p class="splash-tagline">Preparing your dashboard…</p>
+      </div>
+
+      <div class="splash-track" role="progressbar" aria-label="Loading Tobu Admin" aria-busy="true">
+        <div class="splash-fill"></div>
+      </div>
+
+      <!-- Polite live region: announces progress without stealing focus. -->
+      <p class="splash-status" id="splash-status" role="status" aria-live="polite">
+        Loading your lessons and stats…
+      </p>
+
+      <p class="splash-slow" id="splash-slow" role="status" aria-live="polite">
+        This is taking longer than usual. Hang tight — or
+        <a href="/">refresh the page</a>.
+      </p>
+    </div>
+
+    <script>
+      ;(function () {
+        var splash = document.getElementById('splash')
+        var statusEl = document.getElementById('splash-status')
+
+        // Progressive status messages give screen reader users a sense of
+        // forward progress instead of one static "loading".
+        var messages = [
+          'Loading your lessons and stats…',
+          'Fetching streaks and XP…',
+          'Almost there…',
+        ]
+        var index = 0
+        var rotate = setInterval(function () {
+          index = (index + 1) % messages.length
+          statusEl.textContent = messages[index]
+        }, 2200)
+
+        // Past ~6s, surface a slow-connection note so the user isn't left
+        // guessing whether the boot has stalled.
+        var slowTimer = setTimeout(function () {
+          document.getElementById('splash-slow').classList.add('is-visible')
+        }, 6000)
+
+        window.__tobuHideSplash = function () {
+          clearInterval(rotate)
+          clearTimeout(slowTimer)
+          splash.classList.add('is-hidden')
+          setTimeout(function () {
+            splash.remove()
+          }, 320)
+        }
+      })()
+    </script>
+
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

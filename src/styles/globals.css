@@ -1,0 +1,145 @@
+@import 'tailwindcss';
+
+/*
+ * Semantic theme tokens — the ONLY place raw color values are allowed.
+ * Components must reference these via Tailwind utilities (bg-primary,
+ * text-subtle, border-border, …), never raw hex/Tailwind palette colors.
+ */
+@theme {
+  /* Surfaces */
+  --color-background: #fffbf0; /* app canvas (cream) */
+  --color-card: #ffffff; /* panels, stat cards */
+  --color-surface: #f9fafb; /* subtle inset rows / dashed buttons */
+  --color-foreground: #0f172a; /* primary text (ink) */
+  --color-muted: #f3f4f6; /* light fills, tab track */
+  --color-muted-foreground: #4b5563; /* secondary text (gray) */
+  --color-subtle: #94a3b8; /* labels, table headers, meta */
+  --color-disabled: #cbd5e1; /* inactive dots / placeholder text */
+  --color-border: #e5e7eb;
+
+  /* Primary — green */
+  --color-primary: #22c55e;
+  --color-primary-foreground: #ffffff;
+  --color-primary-dark: #15803d;
+  --color-primary-soft: #dcfce7;
+
+  /* Warning — yellow */
+  --color-warning: #ffd34d;
+  --color-warning-foreground: #b45309;
+  --color-warning-soft: #fff7db;
+
+  /* Info — blue */
+  --color-info: #38bdf8;
+  --color-info-foreground: #0369a1;
+  --color-info-soft: #e0f5ff;
+
+  /* Destructive — red */
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
+  --color-destructive-soft: #fee2e2;
+
+  /* Accent — purple */
+  --color-accent: #8b5cf6;
+  --color-accent-foreground: #6d28d9;
+  --color-accent-soft: #ede9fe;
+
+  /* Loading skeletons */
+  --color-skeleton: #ececec;
+  --color-skeleton-highlight: #f5f5f5;
+
+  /* Loading animations */
+  --animate-bob: bob 1.8s ease-in-out infinite;
+  --animate-spin-ring: spin-ring 1s linear infinite;
+  --animate-indeterminate: indeterminate 1.3s ease-in-out infinite;
+  --animate-soft-pulse: soft-pulse 1.6s ease-in-out infinite;
+
+  /* Sidebar (dark) */
+  --color-sidebar: #0f172a;
+  --color-sidebar-accent: #1e293b;
+  --color-sidebar-foreground: #cbd5e1;
+  --color-sidebar-muted: #64748b;
+
+  /* Fonts */
+  --font-display: 'Fredoka', 'Noto Sans Myanmar', 'Padauk', system-ui, sans-serif;
+  --font-body: 'Inter', 'Noto Sans Myanmar', 'Padauk', system-ui, sans-serif;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--font-body);
+    background: var(--color-background);
+    color: var(--color-foreground);
+  }
+}
+
+/*
+ * Skeleton placeholder — shimmering block used while content loads.
+ * Under prefers-reduced-motion it falls back to a flat fill so the
+ * placeholder still reads as "not real content" without the motion.
+ */
+@utility skeleton {
+  border-radius: 10px;
+  background-color: var(--color-skeleton);
+  background-image: linear-gradient(
+    90deg,
+    var(--color-skeleton) 25%,
+    var(--color-skeleton-highlight) 37%,
+    var(--color-skeleton) 63%
+  );
+  background-size: 400% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    background-image: none;
+    animation: none;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes spin-ring {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes indeterminate {
+  0% {
+    left: -40%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+@keyframes soft-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
