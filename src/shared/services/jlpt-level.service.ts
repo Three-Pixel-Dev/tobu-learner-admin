@@ -5,7 +5,9 @@ export interface JlptLevelDto {
   id: number
   code: string
   name: string
+  nameMm: string | null
   unlocked: boolean
+  hot: boolean
   deleted: boolean
   lessonCount: number
   createdAt: string
@@ -15,11 +17,13 @@ export interface JlptLevelDto {
 export interface CreateJlptLevelPayload {
   code: string
   name: string
+  nameMm: string
 }
 
 export interface UpdateJlptLevelPayload {
   code: string
   name: string
+  nameMm: string
 }
 
 async function unwrap<T>(promise: Promise<{ data: ApiResponse<T> }>): Promise<T> {
@@ -44,6 +48,10 @@ export const jlptLevelService = {
     return unwrap(
       http.put<ApiResponse<JlptLevelDto>>(`/api/jlpt-levels/${id}/unlocked`, { unlocked }),
     )
+  },
+
+  setHot(id: number, hot: boolean) {
+    return unwrap(http.put<ApiResponse<JlptLevelDto>>(`/api/jlpt-levels/${id}/hot`, { hot }))
   },
 
   softDelete(id: number) {

@@ -20,16 +20,16 @@ import {
   useCreateJlptLevelMutation,
   useJlptLevelsQuery,
   useRestoreJlptLevelMutation,
+  useSetJlptLevelHotMutation,
   useSetJlptLevelUnlockedMutation,
   useSoftDeleteJlptLevelMutation,
   useUpdateJlptLevelMutation,
 } from '@/shared/queries/jlpt-level.query'
 import type { JlptLevelDto } from '@/shared/services/jlpt-level.service'
 import { cn } from '@/util/cn'
-import { formatJoinedMonth, formatRelativeTime } from '@/util/relative-time'
 
 const ROW_GRID =
-  'grid grid-cols-[90px_1.6fr_1fr_1fr_140px] items-center gap-[14px] px-[20px] py-[16px] text-[13px] max-md:grid-cols-1'
+  'grid grid-cols-[90px_1.4fr_0.8fr_1fr_0.9fr_140px] items-center gap-[14px] px-[20px] py-[16px] text-[13px] max-md:grid-cols-1'
 
 const codeFieldSchema = z
   .string()
@@ -41,11 +41,13 @@ const codeFieldSchema = z
 const createSchema = z.object({
   code: codeFieldSchema,
   name: z.string().trim().min(1, 'Name is required').max(100, 'Name is too long'),
+  nameMm: z.string().trim().min(1, 'Myanmar name is required').max(150, 'Myanmar name is too long'),
 })
 
 const editSchema = z.object({
   code: codeFieldSchema,
   name: z.string().trim().min(1, 'Name is required').max(100, 'Name is too long'),
+  nameMm: z.string().trim().min(1, 'Myanmar name is required').max(150, 'Myanmar name is too long'),
 })
 
 type CreateFormValues = z.infer<typeof createSchema>
@@ -54,6 +56,12 @@ type EditFormValues = z.infer<typeof editSchema>
 interface PendingAccessChange {
   id: number
   code: string
+}
+
+interface PendingFeatureChange {
+  id: number
+  code: string
+  hot: boolean
 }
 
 interface PendingDisable {
@@ -66,6 +74,7 @@ export function JlptLevelsPage() {
   const createLevel = useCreateJlptLevelMutation()
   const updateLevel = useUpdateJlptLevelMutation()
   const setUnlocked = useSetJlptLevelUnlockedMutation()
+  const setHot = useSetJlptLevelHotMutation()
   const softDelete = useSoftDeleteJlptLevelMutation()
   const restore = useRestoreJlptLevelMutation()
 
@@ -74,16 +83,17 @@ export function JlptLevelsPage() {
   const [toast, setToast] = useState<string | null>(null)
   const [pendingLock, setPendingLock] = useState<PendingAccessChange | null>(null)
   const [pendingUnlock, setPendingUnlock] = useState<PendingAccessChange | null>(null)
+  const [pendingFeature, setPendingFeature] = useState<PendingFeatureChange | null>(null)
   const [pendingDisable, setPendingDisable] = useState<PendingDisable | null>(null)
 
   const createForm = useForm<CreateFormValues>({
     resolver: zodResolver(createSchema),
-    defaultValues: { code: '', name: '' },
+    defaultValues: { code: '', name: '', nameMm: '' },
   })
 
   const editForm = useForm<EditFormValues>({
     resolver: zodResolver(editSchema),
-    defaultValues: { code: '', name: '' },
+    defaultValues: { code: '', name: '', nameMm: '' },
   })
 
   const levels = levelsQuery.data ?? []
@@ -112,24 +122,24 @@ export function JlptLevelsPage() {
 
   const openCreate = () => {
     setEditing(null)
-    createForm.reset({ code: '', name: '' })
+    createForm.reset({ code: '', name: '', nameMm: '' })
     setCreateOpen(true)
   }
 
   const openEdit = (level: JlptLevelDto) => {
     setCreateOpen(false)
     setEditing(level)
-    editForm.reset({ code: level.code, name: level.name })
+    editForm.reset({ code: level.code, name: level.name, nameMm: level.nameMm ?? '' })
   }
 
   const closeCreate = () => {
     setCreateOpen(false)
-    createForm.reset({ code: '', name: '' })
+    createForm.reset({ code: '', name: '', nameMm: '' })
   }
 
   const closeEdit = () => {
     setEditing(null)
-    editForm.reset({ code: '', name: '' })
+    editForm.reset({ code: '', name: '', nameMm: '' })
   }
 
   const isCodeTaken = (code: string, excludeId?: number) => {
@@ -146,7 +156,7 @@ export function JlptLevelsPage() {
       return
     }
     createLevel.mutate(
-      { code, name: values.name.trim() },
+      { code, name: values.name.trim(), nameMm: values.nameMm.trim() },
       {
         onSuccess: (created) => {
           closeCreate()
@@ -165,7 +175,10 @@ export function JlptLevelsPage() {
       return
     }
     updateLevel.mutate(
-      { id: editing.id, payload: { code, name: values.name.trim() } },
+      {
+        id: editing.id,
+        payload: { code, name: values.name.trim(), nameMm: values.nameMm.trim() },
+      },
       {
         onSuccess: (updated) => {
           closeEdit()
@@ -213,6 +226,7 @@ export function JlptLevelsPage() {
           <div role="columnheader">Name</div>
           <div role="columnheader">Content</div>
           <div role="columnheader">Access</div>
+          <div role="columnheader">Featured</div>
           <div role="columnheader" className="text-right">
             Actions
           </div>
@@ -248,9 +262,7 @@ export function JlptLevelsPage() {
                 ) : null}
               </div>
               <div className="mt-[1px] text-[11.5px] text-muted-foreground">
-                {level.deleted
-                  ? `disabled ${formatRelativeTime(level.updatedAt)}`
-                  : `created ${formatJoinedMonth(level.createdAt)}`}
+                {level.nameMm?.trim() ? level.nameMm : 'No Myanmar name'}
               </div>
             </div>
             <div className="text-[13px] text-muted-foreground">
@@ -282,6 +294,30 @@ export function JlptLevelsPage() {
                     )}
                   >
                     {level.unlocked ? 'Unlocked' : 'Locked'}
+                  </span>
+                </>
+              )}
+            </div>
+            <div className="flex items-center gap-[8px]">
+              {level.deleted ? (
+                <span className="text-[12.5px] font-semibold text-muted-foreground">—</span>
+              ) : (
+                <>
+                  <Switch
+                    checked={level.hot}
+                    label={`Feature ${level.name}`}
+                    disabled={setHot.isPending}
+                    onCheckedChange={(next) => {
+                      setPendingFeature({ id: level.id, code: level.code, hot: next })
+                    }}
+                  />
+                  <span
+                    className={cn(
+                      'text-[12.5px] font-semibold',
+                      level.hot ? 'text-primary-dark' : 'text-muted-foreground',
+                    )}
+                  >
+                    {level.hot ? 'Featured' : 'Normal'}
                   </span>
                 </>
               )}
@@ -337,7 +373,7 @@ export function JlptLevelsPage() {
       <FormDialog
         open={createOpen}
         title="Add level"
-        description="New levels start locked. Use a short code (N5, BIZ) and a friendly display name."
+        description="New levels start locked. Add an English name and Myanmar subtitle for the learner app."
         onClose={() => {
           if (!createLevel.isPending) closeCreate()
         }}
@@ -361,7 +397,7 @@ export function JlptLevelsPage() {
           </Field>
           <Field label="Display name">
             <Input
-              placeholder="e.g. Business English"
+              placeholder="e.g. JLPT N5"
               aria-invalid={Boolean(createForm.formState.errors.name)}
               {...createForm.register('name')}
             />
@@ -370,6 +406,22 @@ export function JlptLevelsPage() {
                 ⚠ {createForm.formState.errors.name.message}
               </p>
             ) : null}
+          </Field>
+          <Field label="Myanmar name">
+            <Input
+              placeholder="e.g. အခြေခံ အဆင့် ၁"
+              aria-invalid={Boolean(createForm.formState.errors.nameMm)}
+              {...createForm.register('nameMm')}
+            />
+            {createForm.formState.errors.nameMm ? (
+              <p className="mt-[5px] text-[12px] font-semibold text-destructive" role="alert">
+                ⚠ {createForm.formState.errors.nameMm.message}
+              </p>
+            ) : (
+              <p className="mt-[5px] text-[11.5px] text-muted-foreground">
+                Shown under the level title in the mobile app.
+              </p>
+            )}
           </Field>
           <div className="flex justify-end gap-[10px] pt-[4px]">
             <Button type="button" variant="ghost" onClick={closeCreate} disabled={createLevel.isPending}>
@@ -385,7 +437,7 @@ export function JlptLevelsPage() {
       <FormDialog
         open={editing != null}
         title={editing ? `Edit ${editing.code}` : 'Edit level'}
-        description="Update the code or display name. Codes must be unique."
+        description="Update the code, English name, and Myanmar subtitle."
         onClose={() => {
           if (!updateLevel.isPending) closeEdit()
         }}
@@ -393,7 +445,7 @@ export function JlptLevelsPage() {
         <form onSubmit={onEdit} className="flex flex-col gap-[14px]" noValidate>
           <Field label="Code">
             <Input
-              placeholder="e.g. BIZ"
+              placeholder="e.g. N5"
               aria-invalid={Boolean(editForm.formState.errors.code)}
               {...editForm.register('code')}
             />
@@ -409,6 +461,7 @@ export function JlptLevelsPage() {
           </Field>
           <Field label="Display name">
             <Input
+              placeholder="e.g. JLPT N5"
               aria-invalid={Boolean(editForm.formState.errors.name)}
               {...editForm.register('name')}
             />
@@ -417,6 +470,22 @@ export function JlptLevelsPage() {
                 ⚠ {editForm.formState.errors.name.message}
               </p>
             ) : null}
+          </Field>
+          <Field label="Myanmar name">
+            <Input
+              placeholder="e.g. အခြေခံ အဆင့် ၁"
+              aria-invalid={Boolean(editForm.formState.errors.nameMm)}
+              {...editForm.register('nameMm')}
+            />
+            {editForm.formState.errors.nameMm ? (
+              <p className="mt-[5px] text-[12px] font-semibold text-destructive" role="alert">
+                ⚠ {editForm.formState.errors.nameMm.message}
+              </p>
+            ) : (
+              <p className="mt-[5px] text-[11.5px] text-muted-foreground">
+                Shown under the level title in the mobile app.
+              </p>
+            )}
           </Field>
           <div className="flex justify-end gap-[10px] pt-[4px]">
             <Button type="button" variant="ghost" onClick={closeEdit} disabled={updateLevel.isPending}>
@@ -476,6 +545,47 @@ export function JlptLevelsPage() {
               onSuccess: () => {
                 setToast(`${pendingUnlock.code} unlocked for learners.`)
                 setPendingUnlock(null)
+              },
+              onError: (error) => setToast(getApiErrorMessage(error)),
+            },
+          )
+        }}
+      />
+
+      <ConfirmDialog
+        open={pendingFeature != null}
+        tone="primary"
+        icon={pendingFeature?.hot ? '⭐' : '☆'}
+        title={
+          pendingFeature
+            ? pendingFeature.hot
+              ? `Feature ${pendingFeature.code}?`
+              : `Remove featured from ${pendingFeature.code}?`
+            : 'Update featured?'
+        }
+        description={
+          pendingFeature?.hot
+            ? 'This level will be highlighted as featured in the learner app. Any other featured level will be cleared automatically.'
+            : 'This level will no longer show as featured in the learner app.'
+        }
+        cancelLabel="Cancel"
+        confirmLabel={pendingFeature?.hot ? 'Yes, feature it' : 'Yes featured'}
+        busy={setHot.isPending}
+        onCancel={() => {
+          if (!setHot.isPending) setPendingFeature(null)
+        }}
+        onConfirm={() => {
+          if (!pendingFeature) return
+          setHot.mutate(
+            { id: pendingFeature.id, hot: pendingFeature.hot },
+            {
+              onSuccess: () => {
+                setToast(
+                  pendingFeature.hot
+                    ? `${pendingFeature.code} marked as featured.`
+                    : `${pendingFeature.code} set to normal.`,
+                )
+                setPendingFeature(null)
               },
               onError: (error) => setToast(getApiErrorMessage(error)),
             },

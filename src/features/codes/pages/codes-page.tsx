@@ -4,13 +4,13 @@ import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 
 import { getApiErrorMessage } from '@/app/api/http-client'
+import { FormDialog } from '@/components/common/form-dialog'
 import { PageHeader } from '@/components/common/page-header'
-import { SlideForm } from '@/components/common/slide-form'
 import { TablePagination } from '@/components/common/table-pagination'
 import { Toast } from '@/components/common/toast'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Panel, PanelHead, PanelTitle } from '@/components/ui/panel'
+import { Panel } from '@/components/ui/panel'
 import { Pill } from '@/components/ui/pill'
 import { CodesSkeleton } from '@/features/codes/components/codes-skeleton'
 import {
@@ -134,6 +134,25 @@ export function CodesPage() {
     .filter((level) => selectedIds.includes(level.id))
     .map((level) => level.code)
 
+  const openGenerateForm = () => {
+    const defaults = selectableLevels
+      .filter((level) => level.unlocked)
+      .slice(0, 2)
+      .map((level) => level.id)
+    form.reset({
+      jlptLevelIds: defaults,
+      durationDays: 90,
+      quantity: 10,
+    })
+    setIsFormOpen(true)
+  }
+
+  const closeGenerateForm = () => {
+    if (!generateCodes.isPending) {
+      setIsFormOpen(false)
+    }
+  }
+
   if ((codesQuery.isLoading && !codesQuery.data) || (levelsQuery.isLoading && !levelsQuery.data)) {
     return <CodesSkeleton />
   }
@@ -142,7 +161,7 @@ export function CodesPage() {
     return (
       <>
         <PageHeader title="Activation codes" subtitle="Redeemable access codes">
-          <Button type="button" onClick={() => setIsFormOpen(true)}>
+          <Button type="button" onClick={openGenerateForm}>
             ＋ Generate
           </Button>
         </PageHeader>
@@ -185,26 +204,7 @@ export function CodesPage() {
   return (
     <>
       <PageHeader title="Activation codes" subtitle={formatRedeemedSubtitle(meta?.redeemedThisMonth)}>
-        <Button
-          type="button"
-          onClick={() => {
-            setIsFormOpen((open) => {
-              const next = !open
-              if (next) {
-                const defaults = selectableLevels
-                  .filter((level) => level.unlocked)
-                  .slice(0, 2)
-                  .map((level) => level.id)
-                form.reset({
-                  jlptLevelIds: defaults,
-                  durationDays: 90,
-                  quantity: 10,
-                })
-              }
-              return next
-            })
-          }}
-        >
+        <Button type="button" onClick={openGenerateForm}>
           ＋ Generate
         </Button>
       </PageHeader>
@@ -217,149 +217,143 @@ export function CodesPage() {
         </span>
       </div>
 
-      <SlideForm open={isFormOpen}>
-        <Panel className="mb-0">
-          <PanelHead>
-            <div>
-              <PanelTitle>Generate activation codes</PanelTitle>
-              <p className="mt-[4px] mb-0 text-[12px] text-muted-foreground">
-                Pick every level this code should unlock. Duration applies the same to all selected
-                levels.
-              </p>
-            </div>
-          </PanelHead>
-
-          <form onSubmit={onGenerate} className="flex flex-col gap-[18px]" noValidate>
-            <fieldset className="m-0 border-none p-0">
-              <legend className="mb-[8px] text-[12.5px] font-semibold text-foreground">
-                JLPT levels to include
-              </legend>
-              <Controller
-                control={form.control}
-                name="jlptLevelIds"
-                render={({ field }) => (
-                  <div
-                    className="grid grid-cols-2 gap-[8px] sm:grid-cols-3 md:grid-cols-5"
-                    role="group"
-                    aria-label="JLPT levels to include"
-                  >
-                    {selectableLevels.map((level) => {
-                      const locked = !level.unlocked
-                      const checked = field.value.includes(level.id)
-                      return (
-                        <label
-                          key={level.id}
+      <FormDialog
+        open={isFormOpen}
+        title="Generate activation codes"
+        description="Pick every level this code should unlock. Duration applies the same to all selected levels."
+        onClose={closeGenerateForm}
+        className="w-[min(560px,94vw)]"
+      >
+        <form onSubmit={onGenerate} className="flex flex-col gap-[18px]" noValidate>
+          <fieldset className="m-0 border-none p-0">
+            <legend className="mb-[8px] text-[12.5px] font-semibold text-foreground">
+              JLPT levels to include
+            </legend>
+            <Controller
+              control={form.control}
+              name="jlptLevelIds"
+              render={({ field }) => (
+                <div
+                  className="grid grid-cols-2 gap-[8px] sm:grid-cols-3"
+                  role="group"
+                  aria-label="JLPT levels to include"
+                >
+                  {selectableLevels.map((level) => {
+                    const locked = !level.unlocked
+                    const checked = field.value.includes(level.id)
+                    return (
+                      <label
+                        key={level.id}
+                        className={cn(
+                          'relative cursor-pointer rounded-[12px] border-[1.5px] border-border px-[8px] py-[10px] text-center transition',
+                          checked && 'border-primary bg-primary-soft',
+                          locked && 'cursor-not-allowed opacity-50',
+                        )}
+                      >
+                        <input
+                          type="checkbox"
+                          className="absolute inset-0 m-0 cursor-pointer opacity-0 disabled:cursor-not-allowed"
+                          disabled={locked || generateCodes.isPending}
+                          checked={checked}
+                          aria-label={`${level.code} ${level.name}${locked ? ' (locked)' : ''}`}
+                          onChange={(event) => {
+                            if (event.target.checked) {
+                              field.onChange([...field.value, level.id])
+                            } else {
+                              field.onChange(field.value.filter((id) => id !== level.id))
+                            }
+                          }}
+                        />
+                        <span
                           className={cn(
-                            'relative cursor-pointer rounded-[12px] border-[1.5px] border-border px-[8px] py-[10px] text-center transition',
-                            checked && 'border-primary bg-primary-soft',
-                            locked && 'cursor-not-allowed opacity-50',
+                            'block font-display text-[14px] font-bold',
+                            checked ? 'text-primary-dark' : 'text-foreground',
                           )}
                         >
-                          <input
-                            type="checkbox"
-                            className="absolute inset-0 m-0 cursor-pointer opacity-0 disabled:cursor-not-allowed"
-                            disabled={locked || generateCodes.isPending}
-                            checked={checked}
-                            aria-label={`${level.code} ${level.name}${locked ? ' (locked)' : ''}`}
-                            onChange={(event) => {
-                              if (event.target.checked) {
-                                field.onChange([...field.value, level.id])
-                              } else {
-                                field.onChange(field.value.filter((id) => id !== level.id))
-                              }
-                            }}
-                          />
-                          <span
-                            className={cn(
-                              'block font-display text-[14px] font-bold',
-                              checked ? 'text-primary-dark' : 'text-foreground',
-                            )}
-                          >
-                            {level.code}
-                          </span>
-                          <span className="mt-[1px] block text-[10px] text-muted-foreground">
-                            {locked ? 'Locked' : level.name.replace(/^JLPT\s+/i, '') || level.name}
-                          </span>
-                        </label>
-                      )
-                    })}
-                  </div>
-                )}
+                          {level.code}
+                        </span>
+                        <span className="mt-[1px] block text-[10px] text-muted-foreground">
+                          {locked ? 'Locked' : level.name.replace(/^JLPT\s+/i, '') || level.name}
+                        </span>
+                      </label>
+                    )
+                  })}
+                </div>
+              )}
+            />
+            <p className="mt-[10px] min-h-[16px] text-[12px] text-muted-foreground" role="status">
+              {form.formState.errors.jlptLevelIds ? (
+                <strong className="text-destructive">
+                  {form.formState.errors.jlptLevelIds.message}
+                </strong>
+              ) : selectedCodes.length === 0 ? (
+                <strong className="text-destructive">Select at least one level</strong>
+              ) : (
+                <>
+                  Selected:{' '}
+                  <strong className="text-foreground">{selectedCodes.join(', ')}</strong> (
+                  {selectedCodes.length} level{selectedCodes.length === 1 ? '' : 's'})
+                </>
+              )}
+            </p>
+          </fieldset>
+
+          <div className="grid grid-cols-1 gap-[16px] sm:grid-cols-2">
+            <div>
+              <label htmlFor="durationDays" className="mb-[6px] block text-[12.5px] font-semibold">
+                Duration (days)
+              </label>
+              <Input
+                id="durationDays"
+                type="number"
+                min={1}
+                aria-invalid={Boolean(form.formState.errors.durationDays)}
+                {...form.register('durationDays')}
               />
-              <p className="mt-[10px] min-h-[16px] text-[12px] text-muted-foreground" role="status">
-                {form.formState.errors.jlptLevelIds ? (
-                  <strong className="text-destructive">
-                    {form.formState.errors.jlptLevelIds.message}
-                  </strong>
-                ) : selectedCodes.length === 0 ? (
-                  <strong className="text-destructive">Select at least one level</strong>
-                ) : (
-                  <>
-                    Selected:{' '}
-                    <strong className="text-foreground">{selectedCodes.join(', ')}</strong> (
-                    {selectedCodes.length} level{selectedCodes.length === 1 ? '' : 's'})
-                  </>
-                )}
+              <p className="mt-[6px] text-[11.5px] text-muted-foreground">
+                Applies once — all selected levels expire together.
               </p>
-            </fieldset>
-
-            <div className="grid grid-cols-1 gap-[16px] md:grid-cols-2">
-              <div>
-                <label htmlFor="durationDays" className="mb-[6px] block text-[12.5px] font-semibold">
-                  Duration (days)
-                </label>
-                <Input
-                  id="durationDays"
-                  type="number"
-                  min={1}
-                  aria-invalid={Boolean(form.formState.errors.durationDays)}
-                  {...form.register('durationDays')}
-                />
-                <p className="mt-[6px] text-[11.5px] text-muted-foreground">
-                  Applies once — all selected levels expire together.
+              {form.formState.errors.durationDays ? (
+                <p className="mt-[5px] text-[12px] font-semibold text-destructive" role="alert">
+                  {form.formState.errors.durationDays.message}
                 </p>
-                {form.formState.errors.durationDays ? (
-                  <p className="mt-[5px] text-[12px] font-semibold text-destructive" role="alert">
-                    {form.formState.errors.durationDays.message}
-                  </p>
-                ) : null}
-              </div>
-              <div>
-                <label htmlFor="quantity" className="mb-[6px] block text-[12.5px] font-semibold">
-                  Quantity to generate
-                </label>
-                <Input
-                  id="quantity"
-                  type="number"
-                  min={1}
-                  max={100}
-                  aria-invalid={Boolean(form.formState.errors.quantity)}
-                  {...form.register('quantity')}
-                />
-                {form.formState.errors.quantity ? (
-                  <p className="mt-[5px] text-[12px] font-semibold text-destructive" role="alert">
-                    {form.formState.errors.quantity.message}
-                  </p>
-                ) : null}
-              </div>
+              ) : null}
             </div>
+            <div>
+              <label htmlFor="quantity" className="mb-[6px] block text-[12.5px] font-semibold">
+                Quantity to generate
+              </label>
+              <Input
+                id="quantity"
+                type="number"
+                min={1}
+                max={100}
+                aria-invalid={Boolean(form.formState.errors.quantity)}
+                {...form.register('quantity')}
+              />
+              {form.formState.errors.quantity ? (
+                <p className="mt-[5px] text-[12px] font-semibold text-destructive" role="alert">
+                  {form.formState.errors.quantity.message}
+                </p>
+              ) : null}
+            </div>
+          </div>
 
-            <div className="flex flex-wrap gap-[10px]">
-              <Button type="submit" disabled={generateCodes.isPending}>
-                {generateCodes.isPending ? 'Generating…' : 'Generate codes'}
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                disabled={generateCodes.isPending}
-                onClick={() => setIsFormOpen(false)}
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </Panel>
-      </SlideForm>
+          <div className="flex flex-wrap justify-end gap-[10px] pt-[4px]">
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={generateCodes.isPending}
+              onClick={closeGenerateForm}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={generateCodes.isPending}>
+              {generateCodes.isPending ? 'Generating…' : 'Generate codes'}
+            </Button>
+          </div>
+        </form>
+      </FormDialog>
 
       <Panel id="activation-codes-table" className="p-0" role="table" aria-label="Activation codes">
         <div
