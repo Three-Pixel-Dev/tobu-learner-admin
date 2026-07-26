@@ -143,3 +143,46 @@
     opacity: 1;
   }
 }
+
+/* Rich text (TipTap) — always uses app body font; no font-family controls in the editor. */
+.rich-text-content {
+  font-family: var(--font-body);
+}
+
+.rich-text-content p {
+  margin: 0 0 0.75em;
+}
+
+.rich-text-content p:last-child {
+  margin-bottom: 0;
+}
+
+.rich-text-content ul,
+.rich-text-content ol {
+  margin: 0 0 0.75em;
+  padding-left: 1.35rem;
+}
+
+.rich-text-content ul {
+  list-style: disc;
+}
+
+.rich-text-content ol {
+  list-style: decimal;
+}
+
+.rich-text-content li {
+  margin: 0.2em 0;
+}
+
+.rich-text-content li p {
+  margin: 0;
+}
+
+.rich-text-content .is-editor-empty:first-child::before {
+  color: var(--color-subtle);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}

@@ -4,7 +4,7 @@ import { PageHeaderSkeleton } from '@/components/common/page-header-skeleton'
 import { Panel } from '@/components/ui/panel'
 import { Skeleton } from '@/components/ui/skeleton'
 
-const BLOCK_COUNT = 3
+const BLOCK_COUNT = 2
 
 export function ContentSkeleton() {
   return (
