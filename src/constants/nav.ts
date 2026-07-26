@@ -17,6 +17,7 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     label: 'Content',
     items: [
+      { to: '/jlpt-levels', icon: '🎓', label: 'JLPT Levels' },
       { to: '/lessons', icon: '📘', label: 'Lessons' },
       { to: '/kana', icon: 'あ', label: 'Kana & Kanji' },
       { to: '/exams', icon: '📝', label: 'Exams' },

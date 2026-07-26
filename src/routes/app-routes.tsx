@@ -7,6 +7,7 @@ import { CodesSkeleton } from '@/features/codes/components/codes-skeleton'
 import { ContentSkeleton } from '@/features/content/components/content-skeleton'
 import { DashboardSkeleton } from '@/features/dashboard/components/dashboard-skeleton'
 import { ExamsSkeleton } from '@/features/exams/components/exams-skeleton'
+import { JlptLevelsSkeleton } from '@/features/jlpt-levels/components/jlpt-levels-skeleton'
 import { KanaSkeleton } from '@/features/kana/components/kana-skeleton'
 import { LessonsSkeleton } from '@/features/lessons/components/lessons-skeleton'
 import { ProfileSkeleton } from '@/features/profile/components/profile-skeleton'
@@ -21,6 +22,9 @@ const ProfilePage = lazy(() =>
 )
 const DashboardPage = lazy(() =>
   import('@/features/dashboard/pages/dashboard-page').then((m) => ({ default: m.DashboardPage })),
+)
+const JlptLevelsPage = lazy(() =>
+  import('@/features/jlpt-levels/pages/jlpt-levels-page').then((m) => ({ default: m.JlptLevelsPage })),
 )
 const LessonsPage = lazy(() =>
   import('@/features/lessons/pages/lessons-page').then((m) => ({ default: m.LessonsPage })),
@@ -87,6 +91,14 @@ export function AppRoutes() {
             element={
               <PageBoundary fallback={<ProfileSkeleton />}>
                 <ProfilePage />
+              </PageBoundary>
+            }
+          />
+          <Route
+            path="jlpt-levels"
+            element={
+              <PageBoundary fallback={<JlptLevelsSkeleton />}>
+                <JlptLevelsPage />
               </PageBoundary>
             }
           />
