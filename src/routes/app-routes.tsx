@@ -29,6 +29,16 @@ const JlptLevelsPage = lazy(() =>
 const LessonsPage = lazy(() =>
   import('@/features/lessons/pages/lessons-page').then((m) => ({ default: m.LessonsPage })),
 )
+const LessonDetailPage = lazy(() =>
+  import('@/features/lessons/pages/lesson-detail-page').then((m) => ({
+    default: m.LessonDetailPage,
+  })),
+)
+const LessonEditorPage = lazy(() =>
+  import('@/features/lessons/pages/lesson-editor-page').then((m) => ({
+    default: m.LessonEditorPage,
+  })),
+)
 const KanaPage = lazy(() =>
   import('@/features/kana/pages/kana-page').then((m) => ({ default: m.KanaPage })),
 )
@@ -121,6 +131,22 @@ export function AppRoutes() {
             element={
               <PageBoundary fallback={<LessonsSkeleton />}>
                 <LessonsPage />
+              </PageBoundary>
+            }
+          />
+          <Route
+            path="lessons/:id"
+            element={
+              <PageBoundary fallback={<LessonsSkeleton />}>
+                <LessonDetailPage />
+              </PageBoundary>
+            }
+          />
+          <Route
+            path="lessons/:id/edit"
+            element={
+              <PageBoundary fallback={<LessonsSkeleton />}>
+                <LessonEditorPage />
               </PageBoundary>
             }
           />
