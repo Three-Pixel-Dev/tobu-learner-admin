@@ -10,10 +10,12 @@ import { Field } from '@/components/common/field'
 import { FormDialog } from '@/components/common/form-dialog'
 import { PageHeader } from '@/components/common/page-header'
 import { Switch } from '@/components/common/switch'
+import { TablePagination } from '@/components/common/table-pagination'
 import { Toast } from '@/components/common/toast'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { JlptLevelsSkeleton } from '@/features/jlpt-levels/components/jlpt-levels-skeleton'
+import { useClientPagination } from '@/hooks/use-client-pagination'
 import {
   useCreateJlptLevelMutation,
   useJlptLevelsQuery,
@@ -84,7 +86,10 @@ export function JlptLevelsPage() {
     defaultValues: { code: '', name: '' },
   })
 
-  if (levelsQuery.isLoading) {
+  const levels = levelsQuery.data ?? []
+  const pagination = useClientPagination(levels, 10)
+
+  if (levelsQuery.isLoading && !levelsQuery.data) {
     return <JlptLevelsSkeleton />
   }
 
@@ -104,8 +109,6 @@ export function JlptLevelsPage() {
       </>
     )
   }
-
-  const levels = levelsQuery.data ?? []
 
   const openCreate = () => {
     setEditing(null)
@@ -193,9 +196,11 @@ export function JlptLevelsPage() {
       </div>
 
       <div
+        id="jlpt-levels-table"
         className="overflow-hidden rounded-[22px] bg-card shadow-[0_4px_14px_rgba(15,23,42,0.05)]"
         role="table"
         aria-label="JLPT levels"
+        aria-rowcount={levels.length}
       >
         <div
           className={cn(
@@ -219,7 +224,7 @@ export function JlptLevelsPage() {
           </div>
         ) : null}
 
-        {levels.map((level) => (
+        {pagination.items.map((level) => (
           <div
             key={level.id}
             className={cn(ROW_GRID, 'border-t border-muted', level.deleted && 'opacity-55')}
@@ -319,6 +324,15 @@ export function JlptLevelsPage() {
           </div>
         ))}
       </div>
+
+      <TablePagination
+        label="JLPT levels pagination"
+        controlsId="jlpt-levels-table"
+        meta={pagination.meta}
+        busy={levelsQuery.isFetching}
+        onPageChange={pagination.setPage}
+        onPageSizeChange={pagination.setPageSize}
+      />
 
       <FormDialog
         open={createOpen}

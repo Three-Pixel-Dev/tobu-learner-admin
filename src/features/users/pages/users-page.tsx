@@ -6,6 +6,7 @@ import { Avatar } from '@/components/common/avatar'
 import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { PageHeader } from '@/components/common/page-header'
 import { SearchBox } from '@/components/common/search-box'
+import { TablePagination } from '@/components/common/table-pagination'
 import { Toast } from '@/components/common/toast'
 import { IconButton } from '@/components/ui/icon-button'
 import { Panel } from '@/components/ui/panel'
@@ -51,6 +52,7 @@ function toRowView(user: UserAdminDto) {
 export function UsersPage() {
   const [keyword, setKeyword] = useState('')
   const [pageNumber, setPageNumber] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
   const [toast, setToast] = useState<string | null>(null)
   const [pendingRemove, setPendingRemove] = useState<PendingRemove | null>(null)
   const deferredKeyword = useDeferredValue(keyword.trim())
@@ -58,12 +60,12 @@ export function UsersPage() {
   const request = useMemo(
     () => ({
       pageNumber,
-      pageSize: 20,
+      pageSize,
       sortBy: 'createdAt',
       sortOrder: 'DESC' as const,
       filter: { keyword: deferredKeyword || undefined },
     }),
-    [pageNumber, deferredKeyword],
+    [pageNumber, pageSize, deferredKeyword],
   )
 
   const usersQuery = useUsersPageQuery(request)
@@ -119,12 +121,13 @@ export function UsersPage() {
         />
       </PageHeader>
 
-      <Panel className="p-0">
+      <Panel id="users-table" className="p-0" role="table" aria-label="Users">
         <div
           className={cn(
             ROW_GRID,
             'rounded-t-[22px] bg-surface text-[10.5px] font-bold uppercase text-subtle',
           )}
+          role="row"
         >
           <div>User</div>
           <div>Level</div>
@@ -183,28 +186,18 @@ export function UsersPage() {
         ))}
       </Panel>
 
-      {meta && meta.totalPages > 1 ? (
-        <div className="mt-[14px] flex items-center justify-between gap-[12px] text-[12.5px] text-muted-foreground">
-          <span>
-            Page {meta.page} of {meta.totalPages}
-          </span>
-          <div className="flex gap-[8px]">
-            <IconButton
-              aria-label="Previous page"
-              disabled={pageNumber <= 1 || usersQuery.isFetching}
-              onClick={() => setPageNumber((page) => Math.max(1, page - 1))}
-            >
-              ←
-            </IconButton>
-            <IconButton
-              aria-label="Next page"
-              disabled={pageNumber >= meta.totalPages || usersQuery.isFetching}
-              onClick={() => setPageNumber((page) => page + 1)}
-            >
-              →
-            </IconButton>
-          </div>
-        </div>
+      {meta ? (
+        <TablePagination
+          label="Users pagination"
+          controlsId="users-table"
+          meta={meta}
+          busy={usersQuery.isFetching}
+          onPageChange={setPageNumber}
+          onPageSizeChange={(size) => {
+            setPageSize(size)
+            setPageNumber(1)
+          }}
+        />
       ) : null}
 
       <ConfirmDialog
