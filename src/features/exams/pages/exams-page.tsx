@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { getApiErrorMessage } from '@/app/api/http-client'
 import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { FormDialog } from '@/components/common/form-dialog'
 import { PageHeader } from '@/components/common/page-header'
-import { TablePagination } from '@/components/common/table-pagination'
 import { Toast } from '@/components/common/toast'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,14 +14,12 @@ import {
   useCreateExam,
   useDeleteExam,
   useExamDetail,
-  useExamPageQuery,
+  useExamsInfiniteQuery,
   useRestoreExam,
 } from '@/features/exams/exam.query'
 import { LevelSwitcher } from '@/features/lessons/components/level-switcher'
 import { useJlptLevelsQuery } from '@/shared/queries/jlpt-level.query'
-import type { ExamDto, ExamPageRequest } from '@/shared/services/exam.service'
-
-const PAGE_SIZES = [6, 12, 24] as const
+import type { ExamDto, ExamFilter } from '@/shared/services/exam.service'
 
 export function ExamsPage() {
   const navigate = useNavigate()
@@ -35,10 +32,9 @@ export function ExamsPage() {
 
   const levelIdFromUrl = Number(searchParams.get('levelId') || 0) || null
   const [levelId, setLevelId] = useState<number | null>(levelIdFromUrl)
+  const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
   const [includeDisabled, setIncludeDisabled] = useState(false)
-  const [pageNumber, setPageNumber] = useState(1)
-  const [pageSize, setPageSize] = useState(12)
 
   const [createOpen, setCreateOpen] = useState(false)
   const [newTitle, setNewTitle] = useState('')
@@ -46,6 +42,7 @@ export function ExamsPage() {
   const [toast, setToast] = useState<string | null>(null)
   const [pendingDisable, setPendingDisable] = useState<ExamDto | null>(null)
   const [previewId, setPreviewId] = useState<number | null>(null)
+  const sentinelRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (levelId != null || levels.length === 0) return
@@ -68,34 +65,57 @@ export function ExamsPage() {
     )
   }, [levelId, setSearchParams])
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => setSearch(searchInput.trim()), 300)
+    return () => window.clearTimeout(timer)
+  }, [searchInput])
+
   const currentLevel = levels.find((l) => l.id === levelId) ?? null
 
-  const pageRequest = useMemo<ExamPageRequest>(
+  const filter = useMemo<ExamFilter>(
     () => ({
-      pageNumber,
-      pageSize,
-      filter: {
-        jlptLevelId: levelId ?? undefined,
-        search: search.trim() || undefined,
-        includeDisabled,
-      },
+      jlptLevelId: levelId ?? undefined,
+      search: search || undefined,
+      includeDisabled,
     }),
-    [pageNumber, pageSize, levelId, search, includeDisabled],
+    [levelId, search, includeDisabled],
   )
 
-  const examsQuery = useExamPageQuery(pageRequest, levelId != null)
+  const examsQuery = useExamsInfiniteQuery(filter, levelId != null)
   const createMutation = useCreateExam()
   const deleteMutation = useDeleteExam()
   const restoreMutation = useRestoreExam()
   const previewQuery = useExamDetail(previewId ?? undefined)
 
-  const exams = examsQuery.data?.data ?? []
-  const meta = examsQuery.data?.meta
+  const exams = useMemo(
+    () => examsQuery.data?.pages.flatMap((page) => page.data) ?? [],
+    [examsQuery.data],
+  )
+  const totalElements = examsQuery.data?.pages[0]?.meta.totalElements ?? exams.length
+
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (
+          entries[0]?.isIntersecting &&
+          examsQuery.hasNextPage &&
+          !examsQuery.isFetchingNextPage
+        ) {
+          void examsQuery.fetchNextPage()
+        }
+      },
+      { rootMargin: '240px' },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [examsQuery.hasNextPage, examsQuery.isFetchingNextPage, examsQuery.fetchNextPage, exams.length])
 
   const selectLevel = (id: number) => {
     setLevelId(id)
+    setSearchInput('')
     setSearch('')
-    setPageNumber(1)
   }
 
   const handleCreate = async () => {
@@ -142,27 +162,21 @@ export function ExamsPage() {
       <div className="-mx-[2px] mb-[18px] flex flex-wrap items-center justify-between gap-[12px] rounded-[16px] border border-border bg-card px-[18px] py-[12px]">
         <div className="flex flex-wrap items-center gap-[12px]">
           <span className="text-[12.5px] text-subtle">Content / Exams /</span>
-          <LevelSwitcher levels={levels} value={levelId} onChange={selectLevel} />
+          <LevelSwitcher levels={levels} value={levelId} onChange={selectLevel} countKind="exams" />
         </div>
         <div className="flex flex-wrap items-center gap-[10px]">
           <Input
             className="w-[200px] bg-muted"
             placeholder={currentLevel ? `Search ${currentLevel.code} exams…` : 'Search exams…'}
-            value={search}
+            value={searchInput}
             disabled={levelId == null}
-            onChange={(e) => {
-              setSearch(e.target.value)
-              setPageNumber(1)
-            }}
+            onChange={(e) => setSearchInput(e.target.value)}
           />
           <label className="flex cursor-pointer items-center gap-2 text-[12px] font-semibold text-muted-foreground select-none">
             <input
               type="checkbox"
               checked={includeDisabled}
-              onChange={(e) => {
-                setIncludeDisabled(e.target.checked)
-                setPageNumber(1)
-              }}
+              onChange={(e) => setIncludeDisabled(e.target.checked)}
               className="rounded border-muted text-primary"
             />
             Show disabled
@@ -177,14 +191,14 @@ export function ExamsPage() {
         title="Mock Exam Bank"
         subtitle={
           currentLevel
-            ? `${meta?.totalElements ?? exams.length} exam papers for JLPT ${currentLevel.code}.`
+            ? `${totalElements} exam papers for JLPT ${currentLevel.code}.`
             : 'Select a JLPT level to manage mock exams.'
         }
       />
 
       <ExamGrid
         exams={exams}
-        loading={examsQuery.isLoading || levelsQuery.isLoading}
+        loading={(examsQuery.isLoading || levelsQuery.isLoading) && exams.length === 0}
         onOpen={(exam) => navigate(`/exams/${exam.id}`)}
         onPreview={(exam) => setPreviewId(exam.id)}
         onEdit={(exam) => navigate(`/exams/${exam.id}/edit`)}
@@ -192,19 +206,14 @@ export function ExamsPage() {
         onRestore={handleRestore}
       />
 
-      {exams.length > 0 && meta ? (
-        <TablePagination
-          label="Exams pagination"
-          controlsId="exams-grid"
-          meta={meta}
-          pageSizes={PAGE_SIZES}
-          busy={examsQuery.isFetching}
-          onPageChange={setPageNumber}
-          onPageSizeChange={(size) => {
-            setPageSize(size)
-            setPageNumber(1)
-          }}
-        />
+      {exams.length > 0 ? (
+        <div ref={sentinelRef} className="py-4 text-center text-[11px] text-subtle">
+          {examsQuery.isFetchingNextPage
+            ? 'Loading more…'
+            : examsQuery.hasNextPage
+              ? 'Scroll for more'
+              : `Showing ${exams.length} of ${totalElements}`}
+        </div>
       ) : null}
 
       <ExamDetailModal

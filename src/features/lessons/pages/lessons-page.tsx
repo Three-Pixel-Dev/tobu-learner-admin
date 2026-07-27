@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
 import { getApiErrorMessage } from '@/app/api/http-client'
@@ -6,7 +6,6 @@ import { ActionMenu } from '@/components/common/action-menu'
 import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { FormDialog } from '@/components/common/form-dialog'
 import { PageHeader } from '@/components/common/page-header'
-import { TablePagination } from '@/components/common/table-pagination'
 import { Toast } from '@/components/common/toast'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,14 +14,12 @@ import { LevelSwitcher } from '@/features/lessons/components/level-switcher'
 import {
   useCreateLessonMutation,
   useDuplicateLessonMutation,
-  useLessonsQuery,
+  useLessonsInfiniteQuery,
   useSoftDeleteLessonMutation,
 } from '@/shared/queries/lesson.query'
 import { useJlptLevelsQuery } from '@/shared/queries/jlpt-level.query'
 import type { LessonDto } from '@/shared/services/lesson.service'
 import { cn } from '@/util/cn'
-
-const PAGE_SIZES = [10, 25, 50] as const
 
 export function LessonsPage() {
   const navigate = useNavigate()
@@ -35,19 +32,19 @@ export function LessonsPage() {
 
   const levelIdFromUrl = Number(searchParams.get('levelId') || 0) || null
   const [levelId, setLevelId] = useState<number | null>(levelIdFromUrl)
+  const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
-  const [pageNumber, setPageNumber] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
   const [createOpen, setCreateOpen] = useState(false)
   const [newTitle, setNewTitle] = useState('')
   const [pendingDisable, setPendingDisable] = useState<LessonDto | null>(null)
   const [pendingDuplicate, setPendingDuplicate] = useState<LessonDto | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+  const sentinelRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (levelId != null || levels.length === 0) return
     const preferred =
-      levels.find((l) => l.code.toUpperCase() === 'N4') ??
+      levels.find((l) => l.code.toUpperCase() === 'N5') ??
       levels.find((l) => l.unlocked) ??
       levels[0]
     setLevelId(preferred.id)
@@ -62,18 +59,45 @@ export function LessonsPage() {
     }, { replace: true })
   }, [levelId, setSearchParams])
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => setSearch(searchInput.trim()), 300)
+    return () => window.clearTimeout(timer)
+  }, [searchInput])
+
   const currentLevel = levels.find((l) => l.id === levelId) ?? null
-  const lessonsQuery = useLessonsQuery(levelId, search, pageNumber, pageSize)
+  const lessonsQuery = useLessonsInfiniteQuery(levelId, search)
   const createMutation = useCreateLessonMutation()
   const softDeleteMutation = useSoftDeleteLessonMutation()
   const duplicateMutation = useDuplicateLessonMutation()
 
-  const rows = lessonsQuery.data?.data ?? []
-  const meta = lessonsQuery.data?.meta
+  const rows = useMemo(
+    () => lessonsQuery.data?.pages.flatMap((page) => page.data) ?? [],
+    [lessonsQuery.data],
+  )
+  const totalElements = lessonsQuery.data?.pages[0]?.meta.totalElements ?? rows.length
+
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (
+          entries[0]?.isIntersecting &&
+          lessonsQuery.hasNextPage &&
+          !lessonsQuery.isFetchingNextPage
+        ) {
+          void lessonsQuery.fetchNextPage()
+        }
+      },
+      { rootMargin: '240px' },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [lessonsQuery.hasNextPage, lessonsQuery.isFetchingNextPage, lessonsQuery.fetchNextPage, rows.length])
 
   const selectLevel = (id: number) => {
     setLevelId(id)
-    setPageNumber(1)
+    setSearchInput('')
     setSearch('')
   }
 
@@ -129,12 +153,9 @@ export function LessonsPage() {
           <Input
             className="w-[200px] bg-muted"
             placeholder={currentLevel ? `Search ${currentLevel.code} lessons…` : 'Search lessons…'}
-            value={search}
+            value={searchInput}
             disabled={locked || levelId == null}
-            onChange={(e) => {
-              setSearch(e.target.value)
-              setPageNumber(1)
-            }}
+            onChange={(e) => setSearchInput(e.target.value)}
           />
           <Button
             type="button"
@@ -152,7 +173,7 @@ export function LessonsPage() {
           currentLevel
             ? locked
               ? `${currentLevel.code} is locked — unlock it before adding lessons.`
-              : `${meta?.totalElements ?? 0} lessons for JLPT ${currentLevel.code}.`
+              : `${totalElements} lessons for JLPT ${currentLevel.code}.`
             : 'Select a JLPT level to manage lessons.'
         }
       />
@@ -176,7 +197,7 @@ export function LessonsPage() {
           <div className="px-[20px] py-[40px] text-center text-[13px] text-destructive">
             Could not load lessons.
           </div>
-        ) : (meta?.totalElements ?? 0) === 0 && !search.trim() ? (
+        ) : totalElements === 0 && !search.trim() ? (
           <div className="px-[20px] py-[50px] text-center">
             <div className="mb-[10px] text-[32px]" aria-hidden>
               📘
@@ -303,24 +324,19 @@ export function LessonsPage() {
                 </div>
               </div>
             ))}
+            <div
+              ref={sentinelRef}
+              className="border-t border-muted px-[20px] py-[14px] text-center text-[11px] text-subtle"
+            >
+              {lessonsQuery.isFetchingNextPage
+                ? 'Loading more…'
+                : lessonsQuery.hasNextPage
+                  ? 'Scroll for more'
+                  : `Showing ${rows.length} of ${totalElements}`}
+            </div>
           </div>
         )}
       </Panel>
-
-      {!locked && rows.length > 0 && meta ? (
-        <TablePagination
-          label="Lessons pagination"
-          controlsId="lessons-table"
-          meta={meta}
-          pageSizes={PAGE_SIZES}
-          busy={lessonsQuery.isFetching}
-          onPageChange={setPageNumber}
-          onPageSizeChange={(size) => {
-            setPageSize(size)
-            setPageNumber(1)
-          }}
-        />
-      ) : null}
 
       <FormDialog
         open={createOpen}

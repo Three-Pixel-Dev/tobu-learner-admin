@@ -1,5 +1,5 @@
 import { http } from '@/app/api/http-client'
-import type { ApiResponse } from '@/app/api/types'
+import type { ApiResponse, PageMeta } from '@/app/api/types'
 
 export interface KanjiDto {
   id: number
@@ -39,21 +39,50 @@ export interface KanjiFilter {
   includeDisabled?: boolean
 }
 
+export interface KanjiPageRequest {
+  pageNumber?: number
+  pageSize?: number
+  sortBy?: string
+  sortOrder?: 'ASC' | 'DESC'
+  filter?: KanjiFilter
+}
+
+export interface KanjiPageResult {
+  data: KanjiDto[]
+  meta: PageMeta
+}
+
 async function unwrap<T>(promise: Promise<{ data: ApiResponse<T> }>): Promise<T> {
   const { data } = await promise
   return data.data
 }
 
-export const kanjiService = {
-  list(filter?: KanjiFilter) {
-    const params = new URLSearchParams()
-    if (filter?.jlptLevelId) params.append('jlptLevelId', String(filter.jlptLevelId))
-    if (filter?.levelCode) params.append('levelCode', filter.levelCode)
-    if (filter?.search) params.append('search', filter.search)
-    if (filter?.includeDisabled !== undefined) params.append('includeDisabled', String(filter.includeDisabled))
+async function unwrapPage(
+  promise: Promise<{ data: ApiResponse<KanjiDto[]> }>,
+): Promise<KanjiPageResult> {
+  const { data } = await promise
+  return {
+    data: data.data ?? [],
+    meta: (data.meta as PageMeta) ?? { page: 1, size: 24, totalElements: 0, totalPages: 0 },
+  }
+}
 
-    const query = params.toString() ? `?${params.toString()}` : ''
-    return unwrap(http.get<ApiResponse<KanjiDto[]>>(`/api/v1/admin/kanji${query}`))
+export const kanjiService = {
+  page(request: KanjiPageRequest) {
+    return unwrapPage(
+      http.post<ApiResponse<KanjiDto[]>>('/api/v1/admin/kanji/pageable', {
+        pageNumber: request.pageNumber ?? 1,
+        pageSize: request.pageSize ?? 24,
+        sortBy: request.sortBy ?? 'id',
+        sortOrder: request.sortOrder ?? 'ASC',
+        filter: {
+          jlptLevelId: request.filter?.jlptLevelId,
+          levelCode: request.filter?.levelCode,
+          search: request.filter?.search?.trim() || undefined,
+          includeDisabled: request.filter?.includeDisabled ?? true,
+        },
+      }),
+    )
   },
 
   getById(id: number) {

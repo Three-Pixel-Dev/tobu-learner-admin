@@ -1,22 +1,35 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import {
   examService,
   type CreateExamPayload,
-  type ExamPageRequest,
+  type ExamFilter,
   type UpdateExamPayload,
 } from '@/shared/services/exam.service'
 
+const EXAM_PAGE_SIZE = 12
+
 export const EXAM_QUERY_KEYS = {
   all: ['admin', 'exams'] as const,
-  page: (request: ExamPageRequest) => [...EXAM_QUERY_KEYS.all, 'page', request] as const,
+  infinite: (filter: ExamFilter) => [...EXAM_QUERY_KEYS.all, 'infinite', filter] as const,
   detail: (id: number) => [...EXAM_QUERY_KEYS.all, 'detail', id] as const,
 }
 
-export function useExamPageQuery(request: ExamPageRequest, enabled = true) {
-  return useQuery({
-    queryKey: EXAM_QUERY_KEYS.page(request),
-    queryFn: () => examService.page(request),
+export function useExamsInfiniteQuery(filter: ExamFilter, enabled = true) {
+  return useInfiniteQuery({
+    queryKey: EXAM_QUERY_KEYS.infinite(filter),
+    queryFn: ({ pageParam }) =>
+      examService.page({
+        pageNumber: pageParam,
+        pageSize: EXAM_PAGE_SIZE,
+        filter,
+      }),
+    initialPageParam: 1,
+    getNextPageParam: (last) => {
+      const page = last.meta.page || 1
+      const totalPages = last.meta.totalPages || 0
+      return page < totalPages ? page + 1 : undefined
+    },
     enabled,
   })
 }

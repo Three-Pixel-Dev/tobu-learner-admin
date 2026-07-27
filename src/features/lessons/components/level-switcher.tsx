@@ -8,9 +8,16 @@ interface LevelSwitcherProps {
   levels: JlptLevelDto[]
   value: number | null
   onChange: (levelId: number) => void
+  /** What the trailing count represents (default: lessons). */
+  countKind?: 'lessons' | 'exams'
 }
 
-export function LevelSwitcher({ levels, value, onChange }: LevelSwitcherProps) {
+export function LevelSwitcher({
+  levels,
+  value,
+  onChange,
+  countKind = 'lessons',
+}: LevelSwitcherProps) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
   const current = levels.find((l) => l.id === value) ?? levels[0] ?? null
@@ -58,6 +65,8 @@ export function LevelSwitcher({ levels, value, onChange }: LevelSwitcherProps) {
         >
           {levels.map((level) => {
             const selected = level.id === current.id
+            const count = countKind === 'exams' ? (level.examCount ?? 0) : (level.lessonCount ?? 0)
+            const countLabel = countKind === 'exams' ? 'exams' : 'lessons'
             return (
               <button
                 key={level.id}
@@ -89,7 +98,9 @@ export function LevelSwitcher({ levels, value, onChange }: LevelSwitcherProps) {
                     Locked
                   </span>
                 ) : (
-                  <span className="text-[11px] text-subtle">{level.lessonCount} lessons</span>
+                  <span className="text-[11px] text-subtle">
+                    {count} {countLabel}
+                  </span>
                 )}
               </button>
             )

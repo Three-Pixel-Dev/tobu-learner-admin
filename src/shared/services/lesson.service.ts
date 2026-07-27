@@ -142,19 +142,23 @@ async function unwrapPage(
 }
 
 export const lessonService = {
-  list(params: {
-    jlptLevelId: number
-    search?: string
+  page(request: {
     pageNumber?: number
     pageSize?: number
+    filter: {
+      jlptLevelId: number
+      search?: string
+    }
   }) {
     return unwrapPage(
-      http.get<ApiResponse<LessonDto[]>>('/api/lessons', {
-        params: {
-          jlptLevelId: params.jlptLevelId,
-          search: params.search || undefined,
-          pageNumber: params.pageNumber ?? 1,
-          pageSize: params.pageSize ?? 10,
+      http.post<ApiResponse<LessonDto[]>>('/api/lessons/pageable', {
+        pageNumber: request.pageNumber ?? 1,
+        pageSize: request.pageSize ?? 10,
+        sortBy: 'id',
+        sortOrder: 'ASC',
+        filter: {
+          jlptLevelId: request.filter.jlptLevelId,
+          search: request.filter.search?.trim() || undefined,
         },
       }),
     )

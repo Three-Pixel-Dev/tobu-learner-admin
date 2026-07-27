@@ -11,10 +11,14 @@ All notable changes on `dev-alvin` relative to `dev`.
 - **Lesson confirmations** — duplicate lesson uses ConfirmDialog on list and detail (aligned with disable)
 
 ### Changed
-- **Exams list** — switched to `POST /api/v1/admin/exams/pageable` with TablePagination (no more `GET` + `size=100`)
+- **Exams list** — switched to `POST /api/v1/admin/exams/pageable` with infinite scroll (N5 default)
+- **Lessons list** — switched to `POST /api/lessons/pageable` with infinite scroll (N5 default)
+- **Kanji list** — `POST /api/v1/admin/kanji/pageable` with infinite scroll (24 per page)
+- **Exam level switcher** — shows exam counts instead of lesson counts
 - **Exam editor UX** — removed crowded drawer; confirm disable via modal; card click opens detail
 - **503 recovery** — remember return path, double health probe, suppress bounce-back redirects after recovery
 - **AudioSourceField** — optional editable speak-text box when Browser TTS is selected
+- **Kanji cards** — border matched to light Kana card style (`border-border`)
 
 ### Removed
 - **Exam drawer** — replaced by detail page + editor page

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,12 +9,23 @@ import { fetchKanjiVgData, parseCustomSvgString } from '@/features/kana/componen
 import { KanjiPreviewCanvas } from '@/features/kana/components/kanji-preview-canvas'
 import { KanjiBatchModal } from '@/features/kana/components/kanji-batch-modal'
 
+const PAGE_SIZE = 24
+
 export function KanjiDetail() {
   const [kanjiList, setKanjiList] = useState<KanjiDto[]>([])
   const [levels, setLevels] = useState<JlptLevelDto[]>([])
   const [selectedLevelId, setSelectedLevelId] = useState<number | undefined>(undefined)
+  const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(true)
+  const [totalElements, setTotalElements] = useState(0)
+
+  const pageRef = useRef(0)
+  const hasMoreRef = useRef(true)
+  const loadingRef = useRef(false)
+  const sentinelRef = useRef<HTMLDivElement>(null)
 
   // Single Modal state
   const [showModal, setShowModal] = useState(false)
@@ -40,28 +51,84 @@ export function KanjiDetail() {
   const [customSvgText, setCustomSvgText] = useState('')
   const [importLoading, setImportLoading] = useState(false)
 
-  const loadData = async () => {
-    setLoading(true)
-    try {
-      const [kanjiData, levelData] = await Promise.all([
-        kanjiService.list({ jlptLevelId: selectedLevelId, search, includeDisabled: true }),
-        jlptLevelService.list(),
-      ])
-      setKanjiList(kanjiData || [])
+  useEffect(() => {
+    void jlptLevelService.list().then((levelData) => {
       setLevels(levelData || [])
-      if (levelData && levelData.length > 0 && !levelIdInput) {
-        setLevelIdInput(levelData[0].id)
+      if (levelData && levelData.length > 0) {
+        setLevelIdInput((prev) => prev || levelData[0].id)
       }
-    } catch (err) {
-      console.error('Failed to load Kanji list:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
+    })
+  }, [])
 
   useEffect(() => {
-    loadData()
-  }, [selectedLevelId, search])
+    const timer = window.setTimeout(() => setSearch(searchInput.trim()), 300)
+    return () => window.clearTimeout(timer)
+  }, [searchInput])
+
+  const fetchPage = useCallback(
+    async (page: number, append: boolean) => {
+      if (loadingRef.current) return
+      loadingRef.current = true
+      if (append) setLoadingMore(true)
+      else setLoading(true)
+      try {
+        const result = await kanjiService.page({
+          pageNumber: page,
+          pageSize: PAGE_SIZE,
+          filter: {
+            jlptLevelId: selectedLevelId,
+            search: search || undefined,
+            includeDisabled: true,
+          },
+        })
+        setKanjiList((prev) => (append ? [...prev, ...result.data] : result.data))
+        pageRef.current = page
+        const more = page < (result.meta.totalPages || 0)
+        hasMoreRef.current = more
+        setHasMore(more)
+        setTotalElements(result.meta.totalElements ?? result.data.length)
+      } catch (err) {
+        console.error('Failed to load Kanji list:', err)
+        if (!append) {
+          setKanjiList([])
+          setHasMore(false)
+          hasMoreRef.current = false
+          setTotalElements(0)
+        }
+      } finally {
+        loadingRef.current = false
+        setLoading(false)
+        setLoadingMore(false)
+      }
+    },
+    [selectedLevelId, search],
+  )
+
+  const resetAndLoad = useCallback(() => {
+    pageRef.current = 0
+    hasMoreRef.current = true
+    setHasMore(true)
+    void fetchPage(1, false)
+  }, [fetchPage])
+
+  useEffect(() => {
+    resetAndLoad()
+  }, [resetAndLoad])
+
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && hasMoreRef.current && !loadingRef.current) {
+          void fetchPage(pageRef.current + 1, true)
+        }
+      },
+      { rootMargin: '240px' },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [fetchPage, kanjiList.length])
 
   const openCreateModal = () => {
     setEditingItem(null)
@@ -167,7 +234,7 @@ export function KanjiDetail() {
         await kanjiService.create(payload)
       }
       setShowModal(false)
-      loadData()
+      resetAndLoad()
     } catch (err) {
       console.error('Failed to save Kanji:', err)
       alert('Error saving Kanji')
@@ -178,7 +245,7 @@ export function KanjiDetail() {
     if (!confirm('Disable this Kanji item?')) return
     try {
       await kanjiService.softDelete(id)
-      loadData()
+      resetAndLoad()
     } catch (err) {
       console.error('Failed to delete Kanji:', err)
     }
@@ -191,8 +258,8 @@ export function KanjiDetail() {
         <div className="flex items-center gap-3">
           <Input
             placeholder="Search character or meaning..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="w-[220px]"
           />
           <select
@@ -207,6 +274,11 @@ export function KanjiDetail() {
               </option>
             ))}
           </select>
+          {totalElements > 0 ? (
+            <span className="text-[11px] text-subtle">
+              Showing {kanjiList.length} of {totalElements}
+            </span>
+          ) : null}
         </div>
 
         <div className="flex items-center gap-2">
@@ -218,69 +290,74 @@ export function KanjiDetail() {
       </div>
 
       {/* Kanji Cards Grid */}
-      {loading ? (
+      {loading && kanjiList.length === 0 ? (
         <div className="py-8 text-center text-xs text-subtle">Loading Kanji data...</div>
       ) : kanjiList.length === 0 ? (
         <div className="rounded-xl border border-dashed p-8 text-center text-xs text-subtle">
           No Kanji items found. Click "+ Add New Kanji" or "📦 Batch Upload Kanji" to create.
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {kanjiList.map((item) => (
-            <div
-              key={item.id}
-              className={`rounded-2xl border bg-white p-4 shadow-sm transition-all ${item.deleted ? 'opacity-50' : 'hover:border-emerald-300'
-                }`}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-emerald-50 text-3xl font-bold text-emerald-800">
-                    {item.character}
+        <>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {kanjiList.map((item) => (
+              <div
+                key={item.id}
+                className={`rounded-2xl border-[1.5px] border-border bg-card p-4 transition-all ${item.deleted ? 'opacity-50' : 'hover:border-[#CBD5E1]'
+                  }`}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-emerald-50 text-3xl font-bold text-emerald-800">
+                      {item.character}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="rounded bg-sky-100 px-2 py-0.5 text-[10px] font-extrabold text-sky-800">
+                          {item.jlptLevelCode || 'N5'}
+                        </span>
+                        <span className="text-xs font-semibold text-subtle">
+                          {item.strokeCount || (item.strokeOrderJson?.strokes?.length || 0)} strokes
+                        </span>
+                      </div>
+                      <div className="mt-1 text-sm font-bold text-gray-900">
+                        {item.meaningMm || item.meaningEn}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => openEditModal(item)}
+                      className="rounded-lg p-1.5 text-xs text-gray-600 hover:bg-gray-100"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      onClick={() => handleDelete(item.id)}
+                      className="rounded-lg p-1.5 text-xs text-red-600 hover:bg-red-50"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl bg-gray-50 p-2 text-xs">
+                  <div>
+                    <span className="text-[10px] text-subtle">音 (Onyomi):</span>
+                    <div className="font-semibold text-gray-800">{item.onyomi || '-'}</div>
                   </div>
                   <div>
-                    <div className="flex items-center gap-2">
-                      <span className="rounded bg-sky-100 px-2 py-0.5 text-[10px] font-extrabold text-sky-800">
-                        {item.jlptLevelCode || 'N5'}
-                      </span>
-                      <span className="text-xs font-semibold text-subtle">
-                        {item.strokeCount || (item.strokeOrderJson?.strokes?.length || 0)} strokes
-                      </span>
-                    </div>
-                    <div className="mt-1 text-sm font-bold text-gray-900">
-                      {item.meaningMm || item.meaningEn}
-                    </div>
+                    <span className="text-[10px] text-subtle">訓 (Kunyomi):</span>
+                    <div className="font-semibold text-gray-800">{item.kunyomi || '-'}</div>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => openEditModal(item)}
-                    className="rounded-lg p-1.5 text-xs text-gray-600 hover:bg-gray-100"
-                  >
-                    ✏️
-                  </button>
-                  <button
-                    onClick={() => handleDelete(item.id)}
-                    className="rounded-lg p-1.5 text-xs text-red-600 hover:bg-red-50"
-                  >
-                    🗑️
-                  </button>
-                </div>
               </div>
-
-              <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl bg-gray-50 p-2 text-xs">
-                <div>
-                  <span className="text-[10px] text-subtle">音 (Onyomi):</span>
-                  <div className="font-semibold text-gray-800">{item.onyomi || '-'}</div>
-                </div>
-                <div>
-                  <span className="text-[10px] text-subtle">訓 (Kunyomi):</span>
-                  <div className="font-semibold text-gray-800">{item.kunyomi || '-'}</div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+          <div ref={sentinelRef} className="py-4 text-center text-[11px] text-subtle">
+            {loadingMore ? 'Loading more…' : hasMore ? 'Scroll for more' : 'All Kanji loaded'}
+          </div>
+        </>
       )}
 
       {/* Batch Upload Modal */}
@@ -288,7 +365,7 @@ export function KanjiDetail() {
         <KanjiBatchModal
           levels={levels}
           onClose={() => setShowBatchModal(false)}
-          onSuccess={loadData}
+          onSuccess={resetAndLoad}
         />
       )}
 

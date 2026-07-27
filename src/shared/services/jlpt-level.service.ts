@@ -10,6 +10,7 @@ export interface JlptLevelDto {
   hot: boolean
   deleted: boolean
   lessonCount: number
+  examCount: number
   createdAt: string
   updatedAt: string
 }

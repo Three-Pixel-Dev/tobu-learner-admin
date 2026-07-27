@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import {
   lessonService,
@@ -8,29 +8,34 @@ import {
 } from '@/shared/services/lesson.service'
 import { useAuthStore } from '@/shared/stores/auth.store'
 
+const LESSON_PAGE_SIZE = 20
+
 export const lessonKeys = {
   all: ['lessons'] as const,
-  list: (jlptLevelId: number, search: string, page: number, size: number) =>
-    [...lessonKeys.all, 'list', jlptLevelId, search, page, size] as const,
+  infinite: (jlptLevelId: number, search: string) =>
+    [...lessonKeys.all, 'infinite', jlptLevelId, search] as const,
   detail: (id: number) => [...lessonKeys.all, 'detail', id] as const,
 }
 
-export function useLessonsQuery(
-  jlptLevelId: number | null,
-  search: string,
-  pageNumber: number,
-  pageSize: number,
-) {
+export function useLessonsInfiniteQuery(jlptLevelId: number | null, search: string) {
   const accessToken = useAuthStore((s) => s.accessToken)
-  return useQuery({
-    queryKey: lessonKeys.list(jlptLevelId ?? 0, search, pageNumber, pageSize),
-    queryFn: () =>
-      lessonService.list({
-        jlptLevelId: jlptLevelId!,
-        search,
-        pageNumber,
-        pageSize,
+  return useInfiniteQuery({
+    queryKey: lessonKeys.infinite(jlptLevelId ?? 0, search.trim()),
+    queryFn: ({ pageParam }) =>
+      lessonService.page({
+        pageNumber: pageParam,
+        pageSize: LESSON_PAGE_SIZE,
+        filter: {
+          jlptLevelId: jlptLevelId!,
+          search: search.trim() || undefined,
+        },
       }),
+    initialPageParam: 1,
+    getNextPageParam: (last) => {
+      const page = last.meta.page || 1
+      const totalPages = last.meta.totalPages || 0
+      return page < totalPages ? page + 1 : undefined
+    },
     enabled: Boolean(accessToken) && jlptLevelId != null,
   })
 }
