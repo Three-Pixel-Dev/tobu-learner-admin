@@ -226,8 +226,31 @@ export function CodesPage() {
       >
         <form onSubmit={onGenerate} className="flex flex-col gap-[18px]" noValidate>
           <fieldset className="m-0 border-none p-0">
-            <legend className="mb-[8px] text-[12.5px] font-semibold text-foreground">
-              JLPT levels to include
+            <legend className="mb-[8px] flex w-full items-center justify-between gap-[8px] text-[12.5px] font-semibold text-foreground">
+              <span>JLPT levels to include</span>
+              <span className="flex gap-[8px]">
+                <button
+                  type="button"
+                  className="text-[11.5px] font-semibold text-primary hover:underline disabled:opacity-50"
+                  disabled={generateCodes.isPending}
+                  onClick={() => {
+                    const unlockedIds = selectableLevels
+                      .filter((level) => level.unlocked)
+                      .map((level) => level.id)
+                    form.setValue('jlptLevelIds', unlockedIds, { shouldValidate: true })
+                  }}
+                >
+                  Select all unlocked
+                </button>
+                <button
+                  type="button"
+                  className="text-[11.5px] font-semibold text-muted-foreground hover:underline disabled:opacity-50"
+                  disabled={generateCodes.isPending || selectedIds.length === 0}
+                  onClick={() => form.setValue('jlptLevelIds', [], { shouldValidate: true })}
+                >
+                  Clear
+                </button>
+              </span>
             </legend>
             <Controller
               control={form.control}
