@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 
+import { isUnauthorizedError } from '@/app/api/http-client'
 import { LoadingScreen } from '@/components/common/loading-screen'
 import { useMeQuery } from '@/shared/queries/auth.query'
 import { useAuthHydrated, useAuthStore } from '@/shared/stores/auth.store'
@@ -13,9 +14,13 @@ export function RequireAuth() {
   const location = useLocation()
   const meQuery = useMeQuery(hydrated && Boolean(accessToken))
 
+  // Only kick out on a true auth failure (401 after refresh) or non-admin role.
+  // Do not clear the session on transient /me errors — that races with token refresh
+  // and can make PUT /api/lessons/.../content fail with Unauthorized mid-save.
   const shouldClear =
     Boolean(accessToken) &&
-    (meQuery.isError || (meQuery.isSuccess && meQuery.data.role !== 'ADMIN'))
+    ((meQuery.isSuccess && meQuery.data.role !== 'ADMIN') ||
+      (meQuery.isError && isUnauthorizedError(meQuery.error)))
 
   useEffect(() => {
     if (shouldClear) {

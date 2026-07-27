@@ -11,6 +11,10 @@ export type AudioMode = 'tts' | 'upload'
 interface AudioSourceFieldProps {
   /** Japanese text used when mode is TTS (preview + mobile fallback). */
   speakText: string
+  /** When set, shows an editable text box in TTS mode for the spoken content. */
+  onSpeakTextChange?: (text: string) => void
+  speakTextLabel?: string
+  speakTextPlaceholder?: string
   audioUrl: string | null
   onChange: (audioUrl: string | null) => void
   className?: string
@@ -20,6 +24,9 @@ interface AudioSourceFieldProps {
 
 export function AudioSourceField({
   speakText,
+  onSpeakTextChange,
+  speakTextLabel = 'Listening text (TTS)',
+  speakTextPlaceholder = 'Text the browser / mobile should speak…',
   audioUrl,
   onChange,
   className,
@@ -81,6 +88,9 @@ export function AudioSourceField({
     }
   }
 
+  const canPreview =
+    (mode === 'upload' && Boolean(audioUrl)) || (mode === 'tts' && Boolean(speakText.trim()))
+
   return (
     <Field label={hideLabel ? undefined : 'Audio'} className={className}>
       <div className="flex flex-col gap-[8px]">
@@ -94,6 +104,21 @@ export function AudioSourceField({
             Upload audio file
           </label>
         </div>
+
+        {mode === 'tts' && onSpeakTextChange ? (
+          <div>
+            <label className="mb-1 block text-[12px] font-semibold text-muted-foreground">
+              {speakTextLabel}
+            </label>
+            <textarea
+              value={speakText}
+              rows={3}
+              placeholder={speakTextPlaceholder}
+              className="w-full rounded-xl border border-input bg-background px-3 py-2 text-[13px]"
+              onChange={(e) => onSpeakTextChange(e.target.value)}
+            />
+          </div>
+        ) : null}
 
         <div className="flex flex-wrap items-center gap-[8px]">
           <input
@@ -117,19 +142,19 @@ export function AudioSourceField({
           <Button
             type="button"
             variant="ghost"
-            disabled={!speakText.trim() && !(mode === 'upload' && audioUrl)}
+            disabled={!canPreview}
             onClick={preview}
             className="!px-[12px] !py-[6px] text-[12px]"
           >
             ▶ Preview
           </Button>
-          {audioUrl ? (
+          {mode === 'upload' && audioUrl ? (
             <span className="truncate text-[11px] text-subtle" title={audioUrl}>
               {audioUrl.split('/').pop()}
             </span>
-          ) : (
+          ) : mode === 'tts' ? (
             <span className="text-[11px] text-subtle">Mobile will use SpeechSynthesisUtterance</span>
-          )}
+          ) : null}
         </div>
         {error ? <p className="text-[11px] text-destructive">{error}</p> : null}
       </div>

@@ -1,4 +1,4 @@
-import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios'
+import axios, { AxiosHeaders, type AxiosError, type InternalAxiosRequestConfig } from 'axios'
 
 import { env } from '@/app/config/env'
 import type { ApiResponse, LoginDto } from '@/app/api/types'
@@ -15,6 +15,8 @@ export const http = axios.create({
   },
 })
 
+type RetryConfig = InternalAxiosRequestConfig & { _retry?: boolean }
+
 let refreshPromise: Promise<string | null> | null = null
 
 function clearSessionAndRedirect() {
@@ -22,6 +24,30 @@ function clearSessionAndRedirect() {
   if (window.location.pathname !== '/login') {
     window.location.assign('/login')
   }
+}
+
+function setAuthorizationHeader(config: InternalAxiosRequestConfig, token: string) {
+  const value = `Bearer ${token}`
+  if (config.headers instanceof AxiosHeaders) {
+    config.headers.set('Authorization', value)
+    return
+  }
+  const headers = AxiosHeaders.from(config.headers ?? {})
+  headers.set('Authorization', value)
+  config.headers = headers
+}
+
+function isAuthPublicUrl(url: string | undefined): boolean {
+  if (!url) return false
+  return (
+    url.includes('/api/auth/login') ||
+    url.includes('/api/auth/refresh-token') ||
+    url.includes('/api/auth/signup') ||
+    url.includes('/api/auth/forgot-password') ||
+    url.includes('/api/auth/verify-otp') ||
+    url.includes('/api/auth/reset-password') ||
+    url.includes('/api/auth/signup-verify-otp')
+  )
 }
 
 async function refreshAccessToken(): Promise<string | null> {
@@ -37,8 +63,8 @@ async function refreshAccessToken(): Promise<string | null> {
       { refreshToken },
       { headers: { 'Content-Type': 'application/json' } },
     )
-    const login = data.data
-    if (!login?.accessToken || !login.refreshToken) {
+    const login = data?.data
+    if (!data?.success || !login?.accessToken || !login.refreshToken) {
       clearSessionAndRedirect()
       return null
     }
@@ -63,7 +89,7 @@ async function refreshAccessToken(): Promise<string | null> {
 http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = useAuthStore.getState().accessToken
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`
+    setAuthorizationHeader(config, token)
   }
   return config
 })
@@ -76,17 +102,10 @@ http.interceptors.response.use(
       return Promise.reject(error)
     }
 
-    const original = error.config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined
+    const original = error.config as RetryConfig | undefined
     const status = error.response?.status
-    const url = original?.url ?? ''
 
-    const isAuthPublic =
-      url.includes('/api/auth/login') ||
-      url.includes('/api/auth/refresh-token') ||
-      url.includes('/api/auth/signup') ||
-      url.includes('/api/auth/forgot-password')
-
-    if (status !== 401 || !original || original._retry || isAuthPublic) {
+    if (status !== 401 || !original || original._retry || isAuthPublicUrl(original.url)) {
       return Promise.reject(error)
     }
 
@@ -103,7 +122,7 @@ http.interceptors.response.use(
       return Promise.reject(error)
     }
 
-    original.headers.Authorization = `Bearer ${nextToken}`
+    setAuthorizationHeader(original, nextToken)
     return http(original)
   },
 )
@@ -114,9 +133,16 @@ export function getApiErrorMessage(error: unknown, fallback = 'Something went wr
     if (typeof message === 'string' && message.trim()) {
       return message
     }
+    if (error.response?.status === 401) {
+      return 'Unauthorized'
+    }
   }
   if (error instanceof Error && error.message) {
     return error.message
   }
   return fallback
+}
+
+export function isUnauthorizedError(error: unknown): boolean {
+  return axios.isAxiosError(error) && error.response?.status === 401
 }

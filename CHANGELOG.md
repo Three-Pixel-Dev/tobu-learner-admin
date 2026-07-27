@@ -2,6 +2,23 @@
 
 All notable changes on `dev-alvin` relative to `dev`.
 
+## [Unreleased] — 2026-07-27
+
+### Added
+- **Exams module (complete)** — level-scoped bank, detail page, full-page editor with Orthography / Kanji reading / Reading / Listening tabs, create → edit flow
+- **Exam preview** — category-aware preview modal (stem markers, reading passage, listening audio player / TTS); Preview on list cards and detail page
+- **Listening TTS text** — Browser TTS mode has a dedicated listening-text field; Preview speaks that text (saved as `transcript`)
+- **Lesson confirmations** — duplicate lesson uses ConfirmDialog on list and detail (aligned with disable)
+
+### Changed
+- **Exams list** — switched to `POST /api/v1/admin/exams/pageable` with TablePagination (no more `GET` + `size=100`)
+- **Exam editor UX** — removed crowded drawer; confirm disable via modal; card click opens detail
+- **503 recovery** — remember return path, double health probe, suppress bounce-back redirects after recovery
+- **AudioSourceField** — optional editable speak-text box when Browser TTS is selected
+
+### Removed
+- **Exam drawer** — replaced by detail page + editor page
+
 ## [Unreleased] — 2026-07-26
 
 ### Added

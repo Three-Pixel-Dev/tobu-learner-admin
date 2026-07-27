@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 
+import {
+  consumePathAfterServiceUnavailable,
+  suppressServiceUnavailableRedirect,
+} from '@/app/api/service-unavailable'
 import { buttonVariants } from '@/components/ui/button'
 import { ErrorPageShell } from '@/features/errors/components/error-page-shell'
 import { checkApiHealth } from '@/shared/services/health.service'
@@ -17,7 +21,6 @@ function formatCountdown(seconds: number): string {
 }
 
 export function ServiceUnavailablePage() {
-  const navigate = useNavigate()
   const [seconds, setSeconds] = useState(RETRY_SECONDS)
   const [retryStatus, setRetryStatus] = useState('')
   const [checking, setChecking] = useState(false)
@@ -25,16 +28,31 @@ export function ServiceUnavailablePage() {
   const recoverIfHealthy = useCallback(async () => {
     setChecking(true)
     setRetryStatus('Checking API health…')
-    const status = await checkApiHealth()
-    if (status === 'UP') {
-      setRetryStatus('Service is back. Redirecting…')
-      navigate('/', { replace: true })
-      return true
+
+    // Two probes: Actuator can flicker UP briefly while the app is still warming up.
+    const first = await checkApiHealth()
+    if (first !== 'UP') {
+      setRetryStatus('API is still unavailable — please wait a little longer.')
+      setChecking(false)
+      return false
     }
-    setRetryStatus('API is still unavailable — please wait a little longer.')
-    setChecking(false)
-    return false
-  }, [navigate])
+
+    setRetryStatus('API responded. Confirming…')
+    await new Promise((r) => window.setTimeout(r, 600))
+    const second = await checkApiHealth()
+    if (second !== 'UP') {
+      setRetryStatus('API is still unavailable — please wait a little longer.')
+      setChecking(false)
+      return false
+    }
+
+    setRetryStatus('Service is back. Redirecting…')
+    suppressServiceUnavailableRedirect(10_000)
+    const returnTo = consumePathAfterServiceUnavailable()
+    // Full navigation so RequireAuth / queries remount against a live API.
+    window.location.assign(returnTo)
+    return true
+  }, [])
 
   useEffect(() => {
     if (seconds > 0) {
@@ -134,7 +152,7 @@ export function ServiceUnavailablePage() {
         <Link to="/status" className="font-semibold text-primary-dark no-underline hover:underline">
           Tobu Status
         </Link>{' '}
-        page.
+        page. If this keeps looping, make sure the API on port 8080 is running.
       </p>
     </ErrorPageShell>
   )

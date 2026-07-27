@@ -3,21 +3,21 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   examService,
   type CreateExamPayload,
-  type ExamFilter,
+  type ExamPageRequest,
   type UpdateExamPayload,
 } from '@/shared/services/exam.service'
 
 export const EXAM_QUERY_KEYS = {
   all: ['admin', 'exams'] as const,
-  list: (filter?: ExamFilter, page?: number, size?: number) =>
-    [...EXAM_QUERY_KEYS.all, 'list', filter, page, size] as const,
+  page: (request: ExamPageRequest) => [...EXAM_QUERY_KEYS.all, 'page', request] as const,
   detail: (id: number) => [...EXAM_QUERY_KEYS.all, 'detail', id] as const,
 }
 
-export function useExamList(filter?: ExamFilter, page = 0, size = 50) {
+export function useExamPageQuery(request: ExamPageRequest, enabled = true) {
   return useQuery({
-    queryKey: EXAM_QUERY_KEYS.list(filter, page, size),
-    queryFn: () => examService.list(filter, page, size),
+    queryKey: EXAM_QUERY_KEYS.page(request),
+    queryFn: () => examService.page(request),
+    enabled,
   })
 }
 
@@ -44,7 +44,8 @@ export function useUpdateExam() {
   return useMutation({
     mutationFn: ({ id, payload }: { id: number; payload: UpdateExamPayload }) =>
       examService.update(id, payload),
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      queryClient.setQueryData(EXAM_QUERY_KEYS.detail(variables.id), data)
       queryClient.invalidateQueries({ queryKey: EXAM_QUERY_KEYS.all })
     },
   })

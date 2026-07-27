@@ -1,5 +1,7 @@
 import { http } from '@/app/api/http-client'
-import type { ApiResponse } from '@/app/api/types'
+import type { ApiResponse, PageMeta } from '@/app/api/types'
+
+export type ExamSectionCode = 'VOCAB' | 'GRAMMAR' | 'READING' | 'LISTENING'
 
 export interface ExamChoiceDto {
   id?: number
@@ -10,8 +12,8 @@ export interface ExamChoiceDto {
 
 export interface ExamQuestionDto {
   id?: number
-  categoryId: number
-  categoryCode?: string
+  categoryId?: number
+  categoryCode?: ExamSectionCode | string
   categoryName?: string
   mondaiTitle?: string
   passage?: string
@@ -66,7 +68,7 @@ export interface CreateExamPayload {
   questions?: ExamQuestionDto[]
 }
 
-export interface UpdateExamPayload extends Partial<CreateExamPayload> {}
+export type UpdateExamPayload = Partial<CreateExamPayload>
 
 export interface ExamFilter {
   jlptLevelId?: number
@@ -76,12 +78,25 @@ export interface ExamFilter {
   includeDisabled?: boolean
 }
 
-export interface SpringPage<T> {
-  content: T[]
-  totalElements: number
-  totalPages: number
-  size: number
-  number: number
+export interface ExamPageRequest {
+  pageNumber?: number
+  pageSize?: number
+  sortBy?: string
+  sortOrder?: 'ASC' | 'DESC'
+  filter?: ExamFilter
+}
+
+export interface ExamPageResult {
+  data: ExamDto[]
+  meta: PageMeta
+}
+
+async function unwrapPage(promise: Promise<{ data: ApiResponse<ExamDto[]> }>): Promise<ExamPageResult> {
+  const { data } = await promise
+  return {
+    data: data.data ?? [],
+    meta: (data.meta as PageMeta) ?? { page: 1, size: 12, totalElements: 0, totalPages: 0 },
+  }
 }
 
 async function unwrap<T>(promise: Promise<{ data: ApiResponse<T> }>): Promise<T> {
@@ -90,10 +105,20 @@ async function unwrap<T>(promise: Promise<{ data: ApiResponse<T> }>): Promise<T>
 }
 
 export const examService = {
-  list(filter?: ExamFilter, page = 0, size = 50) {
-    return unwrap(
-      http.get<ApiResponse<SpringPage<ExamDto>>>('/api/v1/admin/exams', {
-        params: { ...filter, page, size },
+  page(request: ExamPageRequest) {
+    return unwrapPage(
+      http.post<ApiResponse<ExamDto[]>>('/api/v1/admin/exams/pageable', {
+        pageNumber: request.pageNumber ?? 1,
+        pageSize: request.pageSize ?? 12,
+        sortBy: request.sortBy ?? 'createdAt',
+        sortOrder: request.sortOrder ?? 'DESC',
+        filter: {
+          jlptLevelId: request.filter?.jlptLevelId,
+          jlptLevelCode: request.filter?.jlptLevelCode,
+          search: request.filter?.search?.trim() || undefined,
+          published: request.filter?.published,
+          includeDisabled: request.filter?.includeDisabled ?? false,
+        },
       }),
     )
   },

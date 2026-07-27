@@ -45,6 +45,16 @@ const KanaPage = lazy(() =>
 const ExamsPage = lazy(() =>
   import('@/features/exams/pages/exams-page').then((m) => ({ default: m.ExamsPage })),
 )
+const ExamDetailPage = lazy(() =>
+  import('@/features/exams/pages/exam-detail-page').then((m) => ({
+    default: m.ExamDetailPage,
+  })),
+)
+const ExamEditorPage = lazy(() =>
+  import('@/features/exams/pages/exam-editor-page').then((m) => ({
+    default: m.ExamEditorPage,
+  })),
+)
 const UsersPage = lazy(() =>
   import('@/features/users/pages/users-page').then((m) => ({ default: m.UsersPage })),
 )
@@ -163,6 +173,22 @@ export function AppRoutes() {
             element={
               <PageBoundary fallback={<ExamsSkeleton />}>
                 <ExamsPage />
+              </PageBoundary>
+            }
+          />
+          <Route
+            path="exams/:id"
+            element={
+              <PageBoundary fallback={<ExamsSkeleton />}>
+                <ExamDetailPage />
+              </PageBoundary>
+            }
+          />
+          <Route
+            path="exams/:id/edit"
+            element={
+              <PageBoundary fallback={<ExamsSkeleton />}>
+                <ExamEditorPage />
               </PageBoundary>
             }
           />

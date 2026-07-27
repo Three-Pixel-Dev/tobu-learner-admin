@@ -31,6 +31,7 @@ export function LessonDetailPage() {
   const softDeleteMutation = useSoftDeleteLessonMutation()
   const restoreMutation = useRestoreLessonMutation()
   const [confirmDisable, setConfirmDisable] = useState(false)
+  const [confirmDuplicate, setConfirmDuplicate] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
 
   const lesson = detailQuery.data
@@ -118,15 +119,7 @@ export function LessonDetailPage() {
             type="button"
             className="mb-[8px] flex w-full cursor-pointer items-center gap-[10px] rounded-xl border-[1.5px] border-border bg-card px-[14px] py-[11px] font-body text-[13.5px] font-semibold hover:bg-muted"
             disabled={duplicateMutation.isPending}
-            onClick={async () => {
-              try {
-                const copy = await duplicateMutation.mutateAsync(lesson.id)
-                setToast('Duplicated — a draft copy was added to this level.')
-                navigate(`/lessons/${copy.id}`)
-              } catch (err) {
-                setToast(getApiErrorMessage(err, 'Could not duplicate.'))
-              }
-            }}
+            onClick={() => setConfirmDuplicate(true)}
           >
             <span aria-hidden>⧉</span> Duplicate lesson
           </button>
@@ -164,6 +157,7 @@ export function LessonDetailPage() {
         description={
           <>
             <strong className="text-foreground">{lesson.title}</strong> will be hidden from learners.
+            You can restore it later.
           </>
         }
         confirmLabel="Disable"
@@ -178,7 +172,37 @@ export function LessonDetailPage() {
             setToast(getApiErrorMessage(err, 'Could not disable.'))
           }
         }}
-        onCancel={() => setConfirmDisable(false)}
+        onCancel={() => {
+          if (!softDeleteMutation.isPending) setConfirmDisable(false)
+        }}
+      />
+
+      <ConfirmDialog
+        open={confirmDuplicate}
+        title="Duplicate this lesson?"
+        description={
+          <>
+            A draft copy of <strong className="text-foreground">{lesson.title}</strong> will be created
+            under this JLPT level.
+          </>
+        }
+        confirmLabel="Duplicate"
+        tone="primary"
+        icon="⧉"
+        busy={duplicateMutation.isPending}
+        onConfirm={async () => {
+          try {
+            const copy = await duplicateMutation.mutateAsync(lesson.id)
+            setConfirmDuplicate(false)
+            setToast('Duplicated — a draft copy was added to this level.')
+            navigate(`/lessons/${copy.id}/edit`)
+          } catch (err) {
+            setToast(getApiErrorMessage(err, 'Could not duplicate.'))
+          }
+        }}
+        onCancel={() => {
+          if (!duplicateMutation.isPending) setConfirmDuplicate(false)
+        }}
       />
 
       <Toast message={toast} onDismiss={() => setToast(null)} />

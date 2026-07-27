@@ -14,6 +14,7 @@ import { Panel } from '@/components/ui/panel'
 import { LevelSwitcher } from '@/features/lessons/components/level-switcher'
 import {
   useCreateLessonMutation,
+  useDuplicateLessonMutation,
   useLessonsQuery,
   useSoftDeleteLessonMutation,
 } from '@/shared/queries/lesson.query'
@@ -40,6 +41,7 @@ export function LessonsPage() {
   const [createOpen, setCreateOpen] = useState(false)
   const [newTitle, setNewTitle] = useState('')
   const [pendingDisable, setPendingDisable] = useState<LessonDto | null>(null)
+  const [pendingDuplicate, setPendingDuplicate] = useState<LessonDto | null>(null)
   const [toast, setToast] = useState<string | null>(null)
 
   useEffect(() => {
@@ -64,6 +66,7 @@ export function LessonsPage() {
   const lessonsQuery = useLessonsQuery(levelId, search, pageNumber, pageSize)
   const createMutation = useCreateLessonMutation()
   const softDeleteMutation = useSoftDeleteLessonMutation()
+  const duplicateMutation = useDuplicateLessonMutation()
 
   const rows = lessonsQuery.data?.data ?? []
   const meta = lessonsQuery.data?.meta
@@ -98,6 +101,18 @@ export function LessonsPage() {
       setToast('Lesson disabled — hidden from learners, can be restored anytime.')
     } catch (err) {
       setToast(getApiErrorMessage(err, 'Could not disable lesson.'))
+    }
+  }
+
+  const handleDuplicate = async () => {
+    if (!pendingDuplicate) return
+    try {
+      const copy = await duplicateMutation.mutateAsync(pendingDuplicate.id)
+      setPendingDuplicate(null)
+      setToast('Duplicated — a draft copy was added to this level.')
+      navigate(`/lessons/${copy.id}/edit`)
+    } catch (err) {
+      setToast(getApiErrorMessage(err, 'Could not duplicate lesson.'))
     }
   }
 
@@ -203,27 +218,27 @@ export function LessonsPage() {
             {rows.map((lesson) => (
               <div
                 key={lesson.id}
+                role="row"
+                tabIndex={0}
                 className={cn(
-                  'grid grid-cols-[1.4fr_1fr_0.7fr_auto] items-center gap-[12px] border-t border-muted px-[20px] py-[14px] max-md:grid-cols-1',
+                  'grid cursor-pointer grid-cols-[1.4fr_1fr_0.7fr_auto] items-center gap-[12px] border-t border-muted px-[20px] py-[14px] transition-colors hover:bg-muted/40 max-md:grid-cols-1',
                   lesson.deleted && 'opacity-55',
                 )}
-                role="row"
+                onClick={() => navigate(`/lessons/${lesson.id}`)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    navigate(`/lessons/${lesson.id}`)
+                  }
+                }}
               >
                 <div role="cell">
-                  <button
-                    type="button"
-                    className="cursor-pointer border-none bg-transparent p-0 text-left font-body"
-                    onClick={() => navigate(`/lessons/${lesson.id}`)}
-                  >
-                    <div className="text-[13.5px] font-semibold hover:text-primary-dark hover:underline">
-                      {lesson.title}
-                    </div>
-                    <div className="mt-[1px] text-[11.5px] text-subtle">
-                      {lesson.vocabCount + lesson.grammarCount + lesson.quizCount} items ・{' '}
-                      {lesson.jlptLevelCode}
-                      {lesson.deleted ? ' ・ Disabled' : ''}
-                    </div>
-                  </button>
+                  <div className="text-[13.5px] font-semibold">{lesson.title}</div>
+                  <div className="mt-[1px] text-[11.5px] text-subtle">
+                    {lesson.vocabCount + lesson.grammarCount + lesson.quizCount} items ・{' '}
+                    {lesson.jlptLevelCode}
+                    {lesson.deleted ? ' ・ Disabled' : ''}
+                  </div>
                 </div>
                 <div role="cell" className="flex flex-wrap gap-[4px]">
                   <span className="rounded-[20px] bg-info-soft px-[9px] py-[3px] text-[11px] font-bold text-info-foreground">
@@ -247,7 +262,12 @@ export function LessonsPage() {
                     {lesson.deleted ? 'Disabled' : lesson.published ? 'Published' : 'Draft'}
                   </span>
                 </div>
-                <div role="cell" className="flex justify-end gap-[6px]">
+                <div
+                  role="cell"
+                  className="flex justify-end gap-[6px]"
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
+                >
                   <Link
                     to={`/lessons/${lesson.id}/edit`}
                     className="flex h-[30px] w-[30px] items-center justify-center rounded-[9px] border-[1.5px] border-border bg-card text-[13px] text-muted-foreground no-underline"
@@ -262,6 +282,11 @@ export function LessonsPage() {
                         id: 'detail',
                         label: 'Open detail',
                         onSelect: () => navigate(`/lessons/${lesson.id}`),
+                      },
+                      {
+                        id: 'duplicate',
+                        label: 'Duplicate',
+                        onSelect: () => setPendingDuplicate(lesson),
                       },
                       ...(lesson.deleted
                         ? []
@@ -339,8 +364,31 @@ export function LessonsPage() {
         }
         confirmLabel="Disable"
         busy={softDeleteMutation.isPending}
-        onConfirm={handleDisable}
-        onCancel={() => setPendingDisable(null)}
+        onConfirm={() => void handleDisable()}
+        onCancel={() => {
+          if (!softDeleteMutation.isPending) setPendingDisable(null)
+        }}
+      />
+
+      <ConfirmDialog
+        open={Boolean(pendingDuplicate)}
+        title="Duplicate this lesson?"
+        description={
+          pendingDuplicate ? (
+            <>
+              A draft copy of <strong className="text-foreground">{pendingDuplicate.title}</strong> will
+              be created under this JLPT level.
+            </>
+          ) : null
+        }
+        confirmLabel="Duplicate"
+        tone="primary"
+        icon="⧉"
+        busy={duplicateMutation.isPending}
+        onConfirm={() => void handleDuplicate()}
+        onCancel={() => {
+          if (!duplicateMutation.isPending) setPendingDuplicate(null)
+        }}
       />
 
       <Toast message={toast} onDismiss={() => setToast(null)} />
