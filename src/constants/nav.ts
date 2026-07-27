@@ -27,6 +27,7 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'People',
     items: [
       { to: '/users', icon: '👤', label: 'Users' },
+      { to: '/codes', icon: '🔑', label: 'Activation codes' },
       { to: '/reminders', icon: '🔔', label: 'Reminders' },
     ],
   },

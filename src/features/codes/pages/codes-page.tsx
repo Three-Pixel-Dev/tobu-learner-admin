@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
+import { useSearchParams } from 'react-router-dom'
 import { z } from 'zod'
 
 import { getApiErrorMessage } from '@/app/api/http-client'
@@ -96,10 +97,12 @@ function LevelChips({
 }
 
 export function CodesPage() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [pageNumber, setPageNumber] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [toast, setToast] = useState<string | null>(null)
+  const autoOpenedGenerate = useRef(false)
 
   const request = useMemo(
     () => ({
@@ -150,8 +153,23 @@ export function CodesPage() {
   const closeGenerateForm = () => {
     if (!generateCodes.isPending) {
       setIsFormOpen(false)
+      if (searchParams.has('generate')) {
+        const next = new URLSearchParams(searchParams)
+        next.delete('generate')
+        setSearchParams(next, { replace: true })
+      }
     }
   }
+
+  useEffect(() => {
+    if (autoOpenedGenerate.current) return
+    if (searchParams.get('generate') !== '1') return
+    if (levelsQuery.isLoading || !levelsQuery.data) return
+    if (codesQuery.isLoading && !codesQuery.data) return
+    autoOpenedGenerate.current = true
+    openGenerateForm()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- open once when ?generate=1 after levels load
+  }, [searchParams, levelsQuery.isLoading, levelsQuery.data, codesQuery.isLoading, codesQuery.data])
 
   if ((codesQuery.isLoading && !codesQuery.data) || (levelsQuery.isLoading && !levelsQuery.data)) {
     return <CodesSkeleton />
@@ -205,7 +223,7 @@ export function CodesPage() {
     <>
       <PageHeader title="Activation codes" subtitle={formatRedeemedSubtitle(meta?.redeemedThisMonth)}>
         <Button type="button" onClick={openGenerateForm}>
-          ＋ Generate
+          ＋ Generate login codes
         </Button>
       </PageHeader>
 

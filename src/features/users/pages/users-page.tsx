@@ -1,5 +1,5 @@
 import { useDeferredValue, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 
 import { getApiErrorMessage } from '@/app/api/http-client'
 import type { UserAdminDto } from '@/app/api/types'
@@ -9,6 +9,7 @@ import { PageHeader } from '@/components/common/page-header'
 import { SearchBox } from '@/components/common/search-box'
 import { TablePagination } from '@/components/common/table-pagination'
 import { Toast } from '@/components/common/toast'
+import { buttonVariants } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/icon-button'
 import { Panel } from '@/components/ui/panel'
 import { UsersSkeleton } from '@/features/users/components/users-skeleton'
@@ -112,16 +113,33 @@ export function UsersPage() {
   return (
     <>
       <PageHeader title="Users" subtitle={formatActiveSubtitle(meta?.activeCount)}>
-        <SearchBox
-          placeholder="Search by name or email"
-          value={keyword}
-          onChange={(event) => {
-            setKeyword(event.target.value)
-            setPageNumber(1)
-          }}
-          aria-label="Search users by name or email"
-        />
+        <div className="flex flex-wrap items-center gap-[10px]">
+          <SearchBox
+            placeholder="Search by name or email"
+            value={keyword}
+            onChange={(event) => {
+              setKeyword(event.target.value)
+              setPageNumber(1)
+            }}
+            aria-label="Search users by name or email"
+          />
+          <Link to="/codes?generate=1" className={buttonVariants()}>
+            ＋ Generate login codes
+          </Link>
+        </div>
       </PageHeader>
+
+      <div className="mb-[18px] flex items-start gap-[10px] rounded-[14px] border border-[#7DD3FC] bg-info-soft px-[16px] py-[12px] text-[12.5px] text-info-foreground">
+        <span aria-hidden>🔑</span>
+        <span>
+          Tobu does not pre-create “login code users.” Generate codes under{' '}
+          <Link to="/codes" className="font-semibold underline underline-offset-2">
+            Activation codes
+          </Link>
+          ; learners create their account when they claim a code in the app (pick JLPT
+          level(s) + duration there).
+        </span>
+      </div>
 
       <Panel id="users-table" className="p-0" role="table" aria-label="Users">
         <div
