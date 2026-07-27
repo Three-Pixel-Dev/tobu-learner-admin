@@ -59,12 +59,20 @@ export interface UserAdminDto {
   name: string
   email: string
   level: string | null
+  /** Plaintext reusable login code when pre-created; null otherwise */
+  loginCode: string | null
   currentStreak: number
   totalXp: number
   ban: boolean
   deleted: boolean
   updatedAt: string
   createdAt: string
+}
+
+export interface CreateUserWithLoginCodePayload {
+  loginCode: string
+  jlptLevelIds: number[]
+  durationDays: number
 }
 
 export interface UserListMeta extends PageMeta {

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { useAuthStore } from '@/shared/stores/auth.store'
+import type { CreateUserWithLoginCodePayload } from '@/app/api/types'
 import { userService, type UserPageRequest } from '@/shared/services/user.service'
 
 export const userKeys = {
@@ -15,6 +16,16 @@ export function useUsersPageQuery(request: UserPageRequest) {
     queryFn: () => userService.page(request),
     enabled: Boolean(accessToken),
     placeholderData: (previous) => previous,
+  })
+}
+
+export function useCreateUserWithLoginCodeMutation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: CreateUserWithLoginCodePayload) => userService.createWithLoginCode(payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: userKeys.all })
+    },
   })
 }
 
