@@ -21,6 +21,11 @@ export interface ExamQuestionDraft {
   audioUrl: string
   /** Spoken dialogue for Browser TTS (and mobile fallback). */
   transcript: string
+  furigana: string
+  transMm: string
+  transEn: string
+  explainMm: string
+  explainEn: string
   choices: Array<{ key: string; content: string; correct: boolean }>
 }
 
@@ -183,6 +188,52 @@ export function ExamQuestionEditor({ section, items, onChange }: ExamQuestionEdi
             ))}
           </div>
 
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <Field label="Translation (MM)">
+              <textarea
+                value={item.transMm}
+                rows={2}
+                placeholder="Myanmar translation of the question/passage..."
+                className="w-full rounded-xl border border-input bg-background px-3 py-2 text-[13px]"
+                onChange={(e) => update(index, { transMm: e.target.value })}
+              />
+            </Field>
+            <Field label="Translation (EN)">
+              <textarea
+                value={item.transEn}
+                rows={2}
+                placeholder="English translation..."
+                className="w-full rounded-xl border border-input bg-background px-3 py-2 text-[13px]"
+                onChange={(e) => update(index, { transEn: e.target.value })}
+              />
+            </Field>
+            <Field label="Explanation (MM)">
+              <textarea
+                value={item.explainMm}
+                rows={2}
+                placeholder="Myanmar explanation of the answer..."
+                className="w-full rounded-xl border border-input bg-background px-3 py-2 text-[13px]"
+                onChange={(e) => update(index, { explainMm: e.target.value })}
+              />
+            </Field>
+            <Field label="Explanation (EN)">
+              <textarea
+                value={item.explainEn}
+                rows={2}
+                placeholder="English explanation..."
+                className="w-full rounded-xl border border-input bg-background px-3 py-2 text-[13px]"
+                onChange={(e) => update(index, { explainEn: e.target.value })}
+              />
+            </Field>
+            <Field label="Furigana (Optional)">
+              <Input
+                value={item.furigana}
+                placeholder="Furigana hint if applicable..."
+                onChange={(e) => update(index, { furigana: e.target.value })}
+              />
+            </Field>
+          </div>
+
           <button
             type="button"
             className="mt-[10px] cursor-pointer text-[12px] font-semibold text-muted-foreground hover:text-foreground"
@@ -214,6 +265,11 @@ export function ExamQuestionEditor({ section, items, onChange }: ExamQuestionEdi
               passage: '',
               audioUrl: '',
               transcript: '',
+              furigana: '',
+              transMm: '',
+              transEn: '',
+              explainMm: '',
+              explainEn: '',
               choices: emptyChoices(),
             },
           ])

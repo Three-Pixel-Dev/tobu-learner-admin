@@ -5,7 +5,6 @@ import { DashboardLayout } from '@/components/layouts/dashboard-layout'
 import { GuestOnly, RequireAuth } from '@/components/layouts/require-auth'
 import { CodesSkeleton } from '@/features/codes/components/codes-skeleton'
 import { ContentSkeleton } from '@/features/content/components/content-skeleton'
-import { DashboardSkeleton } from '@/features/dashboard/components/dashboard-skeleton'
 import { ExamsSkeleton } from '@/features/exams/components/exams-skeleton'
 import { JlptLevelsSkeleton } from '@/features/jlpt-levels/components/jlpt-levels-skeleton'
 import { KanaSkeleton } from '@/features/kana/components/kana-skeleton'
@@ -115,7 +114,7 @@ export function AppRoutes() {
           <Route
             index
             element={
-              <PageBoundary fallback={<DashboardSkeleton />}>
+              <PageBoundary fallback={null}>
                 <DashboardPage />
               </PageBoundary>
             }

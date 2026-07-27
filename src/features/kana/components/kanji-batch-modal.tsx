@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import * as XLSX from 'xlsx'
 
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { fetchKanjiVgData } from '@/features/kana/components/kanjivg-importer'
 import { KanjiPreviewCanvas } from '@/features/kana/components/kanji-preview-canvas'
 import { kanjiService, type CreateKanjiPayload } from '@/shared/services/kanji.service'

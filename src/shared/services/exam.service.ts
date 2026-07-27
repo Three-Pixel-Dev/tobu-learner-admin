@@ -142,4 +142,14 @@ export const examService = {
   restore(id: number) {
     return unwrap(http.post<ApiResponse<ExamDetailDto>>(`/api/v1/admin/exams/${id}/restore`))
   },
+
+  uploadQuestionsBatch(id: number, file: File) {
+    const formData = new FormData()
+    formData.append('file', file)
+    return unwrap(
+      http.post<ApiResponse<ExamDetailDto>>(`/api/v1/admin/exams/${id}/questions/batch-upload`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+    )
+  },
 }

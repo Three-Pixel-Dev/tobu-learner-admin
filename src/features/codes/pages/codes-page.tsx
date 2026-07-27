@@ -119,7 +119,8 @@ export function CodesPage() {
   const generateCodes = useGenerateActivationCodesMutation()
 
   const form = useForm<GenerateFormValues>({
-    resolver: zodResolver(generateSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(generateSchema) as any,
     defaultValues: {
       jlptLevelIds: [],
       durationDays: 90,

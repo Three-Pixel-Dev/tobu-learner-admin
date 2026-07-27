@@ -83,3 +83,14 @@ export function useRestoreExam() {
     },
   })
 }
+
+export function useUploadExamQuestionsBatch() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, file }: { id: number; file: File }) => examService.uploadQuestionsBatch(id, file),
+    onSuccess: (data, variables) => {
+      queryClient.setQueryData(EXAM_QUERY_KEYS.detail(variables.id), data)
+      queryClient.invalidateQueries({ queryKey: EXAM_QUERY_KEYS.all })
+    },
+  })
+}

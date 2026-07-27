@@ -194,11 +194,7 @@ export function JlptLevelsPage() {
       <PageHeader
         title="JLPT Levels"
         subtitle="Manage proficiency levels learners progress through, and control which are unlocked."
-      >
-        <Button type="button" onClick={openCreate}>
-          ＋ Add level
-        </Button>
-      </PageHeader>
+      />
 
       <div className="mb-[20px] flex items-start gap-[10px] rounded-[14px] border border-[#7DD3FC] bg-info-soft px-[16px] py-[12px] text-[12.5px] text-info-foreground">
         <span aria-hidden>💡</span>

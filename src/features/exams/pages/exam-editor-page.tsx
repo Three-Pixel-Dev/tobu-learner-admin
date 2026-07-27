@@ -8,6 +8,7 @@ import { Toast } from '@/components/common/toast'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Panel } from '@/components/ui/panel'
+import { ExamBatchUploadModal } from '@/features/exams/components/exam-batch-upload-modal'
 import {
   EXAM_SECTION_LABEL,
   ExamQuestionEditor,
@@ -71,6 +72,7 @@ export function ExamEditorPage() {
   const [questions, setQuestions] = useState<ExamQuestionDraft[]>([])
   const [toast, setToast] = useState<string | null>(null)
   const [hydratedKey, setHydratedKey] = useState<string | null>(null)
+  const [uploadModalOpen, setUploadModalOpen] = useState(false)
 
   const exam = detailQuery.data
   const examHydrateKey = exam
@@ -106,6 +108,11 @@ export function ExamEditorPage() {
           passage: q.passage ?? '',
           audioUrl: q.audioUrl ?? '',
           transcript: q.transcript ?? '',
+          furigana: q.furigana ?? '',
+          transMm: q.transMm ?? '',
+          transEn: q.transEn ?? '',
+          explainMm: q.explainMm ?? '',
+          explainEn: q.explainEn ?? '',
           choices,
         }
       }),
@@ -187,8 +194,12 @@ export function ExamEditorPage() {
                 : undefined,
             passage: q.categoryCode === 'READING' ? q.passage.trim() || undefined : undefined,
             audioUrl: q.categoryCode === 'LISTENING' ? q.audioUrl.trim() || undefined : undefined,
-            transcript:
-              q.categoryCode === 'LISTENING' ? q.transcript.trim() || undefined : undefined,
+            transcript: q.categoryCode === 'LISTENING' ? q.transcript.trim() || undefined : undefined,
+            furigana: q.furigana.trim() || undefined,
+            transMm: q.transMm.trim() || undefined,
+            transEn: q.transEn.trim() || undefined,
+            explainMm: q.explainMm.trim() || undefined,
+            explainEn: q.explainEn.trim() || undefined,
             sortOrder: index + 1,
             choices: q.choices
               .filter((c) => c.content.trim().length > 0)
@@ -215,6 +226,9 @@ export function ExamEditorPage() {
           <strong className="text-foreground">{title || exam.title}</strong>
         </span>
         <div className="flex flex-wrap items-center gap-[10px]">
+          <Button type="button" variant="ghost" onClick={() => setUploadModalOpen(true)}>
+            Batch Upload
+          </Button>
           <Button type="button" variant="ghost" onClick={() => navigate('/exams')}>
             ← Back
           </Button>
@@ -314,6 +328,17 @@ export function ExamEditorPage() {
           onChange={(items) => setSectionQuestions(tab, items)}
         />
       </Panel>
+
+      <ExamBatchUploadModal
+        examId={id}
+        open={uploadModalOpen}
+        onClose={() => setUploadModalOpen(false)}
+        onSuccess={() => {
+          setUploadModalOpen(false)
+          setToast('Questions uploaded successfully.')
+        }}
+        onError={(msg) => setToast(msg)}
+      />
 
       <Toast message={toast} onDismiss={() => setToast(null)} />
     </>
