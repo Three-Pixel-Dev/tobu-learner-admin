@@ -223,7 +223,7 @@ export function CodesPage() {
     <>
       <PageHeader title="Activation codes" subtitle={formatRedeemedSubtitle(meta?.redeemedThisMonth)}>
         <Button type="button" onClick={openGenerateForm}>
-          ＋ Generate login codes
+          ＋ Generate activation codes
         </Button>
       </PageHeader>
 
