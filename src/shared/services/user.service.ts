@@ -1,5 +1,10 @@
 import { http } from '@/app/api/http-client'
-import type { ApiResponse, UserAdminDto, UserListMeta } from '@/app/api/types'
+import type {
+  ApiResponse,
+  CreateUserWithLoginCodePayload,
+  UserAdminDto,
+  UserListMeta,
+} from '@/app/api/types'
 
 export interface UserPageRequest {
   pageNumber?: number
@@ -40,6 +45,16 @@ export const userService = {
         filter: {
           keyword: request.filter?.keyword?.trim() || undefined,
         },
+      }),
+    )
+  },
+
+  createWithLoginCode(payload: CreateUserWithLoginCodePayload) {
+    return unwrap(
+      http.post<ApiResponse<UserAdminDto>>('/api/users/with-login-code', {
+        loginCode: payload.loginCode.trim().toUpperCase(),
+        jlptLevelIds: payload.jlptLevelIds,
+        durationDays: payload.durationDays,
       }),
     )
   },
