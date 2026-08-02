@@ -64,6 +64,16 @@ const CodesPage = lazy(() =>
 const RemindersPage = lazy(() =>
   import('@/features/reminders/pages/reminders-page').then((m) => ({ default: m.RemindersPage })),
 )
+const ReminderEditorPage = lazy(() =>
+  import('@/features/reminders/pages/reminder-editor-page').then((m) => ({
+    default: m.ReminderEditorPage,
+  })),
+)
+const ReminderReportPage = lazy(() =>
+  import('@/features/reminders/pages/reminder-report-page').then((m) => ({
+    default: m.ReminderReportPage,
+  })),
+)
 const ContentPage = lazy(() =>
   import('@/features/content/pages/content-page').then((m) => ({ default: m.ContentPage })),
 )
@@ -213,6 +223,30 @@ export function AppRoutes() {
             element={
               <PageBoundary fallback={<RemindersSkeleton />}>
                 <RemindersPage />
+              </PageBoundary>
+            }
+          />
+          <Route
+            path="reminders/new"
+            element={
+              <PageBoundary fallback={<RemindersSkeleton />}>
+                <ReminderEditorPage />
+              </PageBoundary>
+            }
+          />
+          <Route
+            path="reminders/:id/edit"
+            element={
+              <PageBoundary fallback={<RemindersSkeleton />}>
+                <ReminderEditorPage />
+              </PageBoundary>
+            }
+          />
+          <Route
+            path="reminders/:id/report"
+            element={
+              <PageBoundary fallback={<RemindersSkeleton />}>
+                <ReminderReportPage />
               </PageBoundary>
             }
           />
