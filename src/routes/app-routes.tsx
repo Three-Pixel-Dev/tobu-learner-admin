@@ -11,6 +11,7 @@ import { JlptLevelsSkeleton } from '@/features/jlpt-levels/components/jlpt-level
 import { KanaSkeleton } from '@/features/kana/components/kana-skeleton'
 import { LessonsSkeleton } from '@/features/lessons/components/lessons-skeleton'
 import { ProfileSkeleton } from '@/features/profile/components/profile-skeleton'
+import { BadgesSkeleton } from '@/features/badges/components/badges-skeleton'
 import { RemindersSkeleton } from '@/features/reminders/components/reminders-skeleton'
 import { UsersSkeleton } from '@/features/users/components/users-skeleton'
 
@@ -60,6 +61,9 @@ const UsersPage = lazy(() =>
 )
 const CodesPage = lazy(() =>
   import('@/features/codes/pages/codes-page').then((m) => ({ default: m.CodesPage })),
+)
+const BadgesPage = lazy(() =>
+  import('@/features/badges/pages/badges-page').then((m) => ({ default: m.BadgesPage })),
 )
 const RemindersPage = lazy(() =>
   import('@/features/reminders/pages/reminders-page').then((m) => ({ default: m.RemindersPage })),
@@ -215,6 +219,14 @@ export function AppRoutes() {
             element={
               <PageBoundary fallback={<CodesSkeleton />}>
                 <CodesPage />
+              </PageBoundary>
+            }
+          />
+          <Route
+            path="badges"
+            element={
+              <PageBoundary fallback={<BadgesSkeleton />}>
+                <BadgesPage />
               </PageBoundary>
             }
           />
