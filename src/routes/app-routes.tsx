@@ -5,6 +5,7 @@ import { DashboardLayout } from '@/components/layouts/dashboard-layout'
 import { GuestOnly, RequireAuth } from '@/components/layouts/require-auth'
 import { CodesSkeleton } from '@/features/codes/components/codes-skeleton'
 import { ContentSkeleton } from '@/features/content/components/content-skeleton'
+import { XpRewardSkeleton } from '@/features/xp-reward/components/xp-reward-skeleton'
 import { DashboardSkeleton } from '@/features/dashboard/components/dashboard-skeleton'
 import { ExamsSkeleton } from '@/features/exams/components/exams-skeleton'
 import { JlptLevelsSkeleton } from '@/features/jlpt-levels/components/jlpt-levels-skeleton'
@@ -80,6 +81,9 @@ const ReminderReportPage = lazy(() =>
 )
 const ContentPage = lazy(() =>
   import('@/features/content/pages/content-page').then((m) => ({ default: m.ContentPage })),
+)
+const XpRewardPage = lazy(() =>
+  import('@/features/xp-reward/pages/xp-reward-page').then((m) => ({ default: m.XpRewardPage })),
 )
 const NotFoundPage = lazy(() =>
   import('@/features/errors/pages/not-found-page').then((m) => ({ default: m.NotFoundPage })),
@@ -267,6 +271,14 @@ export function AppRoutes() {
             element={
               <PageBoundary fallback={<ContentSkeleton />}>
                 <ContentPage />
+              </PageBoundary>
+            }
+          />
+          <Route
+            path="xp-rewards"
+            element={
+              <PageBoundary fallback={<XpRewardSkeleton />}>
+                <XpRewardPage />
               </PageBoundary>
             }
           />

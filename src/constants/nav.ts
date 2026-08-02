@@ -34,6 +34,9 @@ export const NAV_SECTIONS: NavSection[] = [
   },
   {
     label: 'System',
-    items: [{ to: '/content', icon: '📄', label: 'Content pages' }],
+    items: [
+      { to: '/content', icon: '📄', label: 'Content pages' },
+      { to: '/xp-rewards', icon: '💎', label: 'XP rewards' },
+    ],
   },
 ]
