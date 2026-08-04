@@ -3,12 +3,15 @@ import { Field } from '@/components/common/field'
 import { ItemCard, ItemHead } from '@/components/common/item-card'
 import { DashedButton } from '@/components/ui/dashed-button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 
 export interface QuizDraft {
   key: string
   mondai: string
   prompt: string
   choices: Array<{ key: string; choiceText: string; correct: boolean }>
+  explainMm: string
+  explainEn: string
 }
 
 interface QuizEditorProps {
@@ -99,6 +102,24 @@ export function QuizEditor({ items, onChange }: QuizEditorProps) {
           >
             ＋ Add choice
           </button>
+          <div className="mt-[12px] grid grid-cols-1 gap-[10px] md:grid-cols-2">
+            <Field label="Explain (Myanmar)">
+              <Textarea
+                value={item.explainMm}
+                rows={3}
+                placeholder="မှန်တဲ့အဖြေကို ရှင်းပြပါ…"
+                onChange={(e) => update(index, { explainMm: e.target.value })}
+              />
+            </Field>
+            <Field label="Explain (English)">
+              <Textarea
+                value={item.explainEn}
+                rows={3}
+                placeholder="Explain the correct answer…"
+                onChange={(e) => update(index, { explainEn: e.target.value })}
+              />
+            </Field>
+          </div>
         </ItemCard>
       ))}
       <DashedButton
@@ -114,6 +135,8 @@ export function QuizEditor({ items, onChange }: QuizEditorProps) {
                 { key: newKey(), choiceText: '', correct: true },
                 { key: newKey(), choiceText: '', correct: false },
               ],
+              explainMm: '',
+              explainEn: '',
             },
           ])
         }

@@ -5,11 +5,14 @@ import { DashboardLayout } from '@/components/layouts/dashboard-layout'
 import { GuestOnly, RequireAuth } from '@/components/layouts/require-auth'
 import { CodesSkeleton } from '@/features/codes/components/codes-skeleton'
 import { ContentSkeleton } from '@/features/content/components/content-skeleton'
+import { XpRewardSkeleton } from '@/features/xp-reward/components/xp-reward-skeleton'
+import { DashboardSkeleton } from '@/features/dashboard/components/dashboard-skeleton'
 import { ExamsSkeleton } from '@/features/exams/components/exams-skeleton'
 import { JlptLevelsSkeleton } from '@/features/jlpt-levels/components/jlpt-levels-skeleton'
 import { KanaSkeleton } from '@/features/kana/components/kana-skeleton'
 import { LessonsSkeleton } from '@/features/lessons/components/lessons-skeleton'
 import { ProfileSkeleton } from '@/features/profile/components/profile-skeleton'
+import { BadgesSkeleton } from '@/features/badges/components/badges-skeleton'
 import { RemindersSkeleton } from '@/features/reminders/components/reminders-skeleton'
 import { UsersSkeleton } from '@/features/users/components/users-skeleton'
 
@@ -60,11 +63,27 @@ const UsersPage = lazy(() =>
 const CodesPage = lazy(() =>
   import('@/features/codes/pages/codes-page').then((m) => ({ default: m.CodesPage })),
 )
+const BadgesPage = lazy(() =>
+  import('@/features/badges/pages/badges-page').then((m) => ({ default: m.BadgesPage })),
+)
 const RemindersPage = lazy(() =>
   import('@/features/reminders/pages/reminders-page').then((m) => ({ default: m.RemindersPage })),
 )
+const ReminderEditorPage = lazy(() =>
+  import('@/features/reminders/pages/reminder-editor-page').then((m) => ({
+    default: m.ReminderEditorPage,
+  })),
+)
+const ReminderReportPage = lazy(() =>
+  import('@/features/reminders/pages/reminder-report-page').then((m) => ({
+    default: m.ReminderReportPage,
+  })),
+)
 const ContentPage = lazy(() =>
   import('@/features/content/pages/content-page').then((m) => ({ default: m.ContentPage })),
+)
+const XpRewardPage = lazy(() =>
+  import('@/features/xp-reward/pages/xp-reward-page').then((m) => ({ default: m.XpRewardPage })),
 )
 const NotFoundPage = lazy(() =>
   import('@/features/errors/pages/not-found-page').then((m) => ({ default: m.NotFoundPage })),
@@ -208,6 +227,14 @@ export function AppRoutes() {
             }
           />
           <Route
+            path="badges"
+            element={
+              <PageBoundary fallback={<BadgesSkeleton />}>
+                <BadgesPage />
+              </PageBoundary>
+            }
+          />
+          <Route
             path="reminders"
             element={
               <PageBoundary fallback={<RemindersSkeleton />}>
@@ -216,10 +243,42 @@ export function AppRoutes() {
             }
           />
           <Route
+            path="reminders/new"
+            element={
+              <PageBoundary fallback={<RemindersSkeleton />}>
+                <ReminderEditorPage />
+              </PageBoundary>
+            }
+          />
+          <Route
+            path="reminders/:id/edit"
+            element={
+              <PageBoundary fallback={<RemindersSkeleton />}>
+                <ReminderEditorPage />
+              </PageBoundary>
+            }
+          />
+          <Route
+            path="reminders/:id/report"
+            element={
+              <PageBoundary fallback={<RemindersSkeleton />}>
+                <ReminderReportPage />
+              </PageBoundary>
+            }
+          />
+          <Route
             path="content"
             element={
               <PageBoundary fallback={<ContentSkeleton />}>
                 <ContentPage />
+              </PageBoundary>
+            }
+          />
+          <Route
+            path="xp-rewards"
+            element={
+              <PageBoundary fallback={<XpRewardSkeleton />}>
+                <XpRewardPage />
               </PageBoundary>
             }
           />

@@ -15,6 +15,7 @@ import {
   useCreateLessonMutation,
   useDuplicateLessonMutation,
   useLessonsInfiniteQuery,
+  useRestoreLessonMutation,
   useSoftDeleteLessonMutation,
 } from '@/shared/queries/lesson.query'
 import { useJlptLevelsQuery } from '@/shared/queries/jlpt-level.query'
@@ -69,6 +70,7 @@ export function LessonsPage() {
   const createMutation = useCreateLessonMutation()
   const softDeleteMutation = useSoftDeleteLessonMutation()
   const duplicateMutation = useDuplicateLessonMutation()
+  const restoreMutation = useRestoreLessonMutation()
 
   const rows = useMemo(
     () => lessonsQuery.data?.pages.flatMap((page) => page.data) ?? [],
@@ -310,7 +312,20 @@ export function LessonsPage() {
                         onSelect: () => setPendingDuplicate(lesson),
                       },
                       ...(lesson.deleted
-                        ? []
+                        ? [
+                            {
+                              id: 'restore',
+                              label: 'Restore',
+                              onSelect: () => {
+                                restoreMutation.mutate(lesson.id, {
+                                  onSuccess: () =>
+                                    setToast('Lesson restored — visible to learners again.'),
+                                  onError: (err) =>
+                                    setToast(getApiErrorMessage(err, 'Could not restore lesson.')),
+                                })
+                              },
+                            },
+                          ]
                         : [
                             {
                               id: 'disable',

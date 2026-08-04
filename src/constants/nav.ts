@@ -29,10 +29,14 @@ export const NAV_SECTIONS: NavSection[] = [
       { to: '/users', icon: '👤', label: 'Users' },
       { to: '/codes', icon: '🔑', label: 'Activation codes' },
       { to: '/reminders', icon: '🔔', label: 'Reminders' },
+      { to: '/badges', icon: '🏅', label: 'Badges' },
     ],
   },
   {
     label: 'System',
-    items: [{ to: '/content', icon: '📄', label: 'Content pages' }],
+    items: [
+      { to: '/content', icon: '📄', label: 'Content pages' },
+      { to: '/xp-rewards', icon: '💎', label: 'XP rewards' },
+    ],
   },
 ]

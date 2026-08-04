@@ -83,6 +83,8 @@ export function LessonEditorPage() {
           choiceText: c.choiceText ?? '',
           correct: Boolean(c.correct),
         })),
+        explainMm: q.explainMm ?? '',
+        explainEn: q.explainEn ?? '',
       })),
     )
     setHydratedId(lesson.id)
@@ -157,6 +159,8 @@ export function LessonEditorPage() {
                   choiceText: c.choiceText.trim(),
                   correct: c.correct,
                 })),
+              explainMm: q.explainMm.trim() || null,
+              explainEn: q.explainEn.trim() || null,
               sortOrder: index,
             })),
         },
@@ -187,9 +191,11 @@ export function LessonEditorPage() {
           <Button type="button" variant="ghost" disabled={busy} onClick={() => saveAll(false)}>
             {busy ? 'Saving…' : 'Save'}
           </Button>
-          <Button type="button" disabled={busy} onClick={() => saveAll(true)}>
-            {lesson.published ? 'Save' : 'Publish'}
-          </Button>
+          {!lesson.published ? (
+            <Button type="button" disabled={busy} onClick={() => saveAll(true)}>
+              {busy ? 'Saving…' : 'Save & publish'}
+            </Button>
+          ) : null}
         </div>
       </div>
 
