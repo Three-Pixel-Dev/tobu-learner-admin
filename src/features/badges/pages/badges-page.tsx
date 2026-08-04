@@ -265,8 +265,9 @@ export function BadgesPage() {
       <div className="mb-[20px] flex items-start gap-[10px] rounded-[14px] border border-[#7DD3FC] bg-info-soft px-[16px] py-[12px] text-[12.5px] text-info-foreground">
         <span aria-hidden>💡</span>
         <span>
-          Criteria fields are metadata for a future auto-award engine. Users earn badges when a row
-          exists in <strong>tobu_user_badge</strong> — counts below reflect that table.
+          Criteria fields drive the auto-award engine (Total XP, lessons completed, streak days).
+          Users earn a badge when they meet a badge&apos;s criteria — counts below reflect{' '}
+          <strong>tobu_user_badge</strong> rows.
         </span>
       </div>
 
