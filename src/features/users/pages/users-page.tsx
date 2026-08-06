@@ -42,7 +42,7 @@ const createSchema = z.object({
     .min(4, 'Login code must be at least 4 characters')
     .max(50, 'Login code is too long'),
   jlptLevelIds: z.array(z.number()).min(1, 'Select at least one JLPT level'),
-  durationDays: z.coerce.number().int().min(1, 'Duration must be at least 1 day').max(3650),
+  durationDays: z.number().int().min(1, 'Duration must be at least 1 day').max(3650),
 })
 
 type CreateFormValues = z.infer<typeof createSchema>
@@ -324,7 +324,7 @@ export function UsersPage() {
               type="number"
               min={1}
               aria-invalid={Boolean(form.formState.errors.durationDays)}
-              {...form.register('durationDays')}
+              {...form.register('durationDays', { valueAsNumber: true })}
             />
             {form.formState.errors.durationDays ? (
               <p className="mt-[5px] text-[12px] font-semibold text-destructive" role="alert">
