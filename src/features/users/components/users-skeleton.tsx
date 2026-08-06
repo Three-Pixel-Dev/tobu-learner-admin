@@ -15,6 +15,15 @@ export function UsersSkeleton() {
       </PageHeaderSkeleton>
 
       <TableSkeleton rowClassName={ROW_GRID} columns={5} rows={7} hasAvatar />
+
+      <div className="mt-[14px] flex flex-wrap items-center justify-between gap-[12px] rounded-[16px] border-[1.5px] border-border bg-card px-[14px] py-[10px]">
+        <Skeleton className="h-[14px] w-[160px]" />
+        <div className="flex gap-[6px]">
+          <Skeleton className="h-[32px] w-[32px] rounded-[10px]" />
+          <Skeleton className="h-[32px] w-[32px] rounded-[10px]" />
+          <Skeleton className="h-[32px] w-[32px] rounded-[10px]" />
+        </div>
+      </div>
     </LoadingRegion>
   )
 }

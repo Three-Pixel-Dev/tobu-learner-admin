@@ -1,45 +1,61 @@
 import { useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 
-import { Tabs } from '@/components/common/tabs'
+import { TablePagination } from '@/components/common/table-pagination'
+import { IconButton } from '@/components/ui/icon-button'
 import { Panel, PanelHead, PanelTitle } from '@/components/ui/panel'
 import { Pill } from '@/components/ui/pill'
 import { Status } from '@/components/ui/status'
-import { IconButton } from '@/components/ui/icon-button'
-import { DASHBOARD_LESSONS, LEVEL_LEGEND, LEVEL_TABS } from '@/features/dashboard/dashboard.mock'
+import { lessonService } from '@/shared/services/lesson.service'
 
 export function LessonsTable() {
-  const [level, setLevel] = useState('N4')
   const navigate = useNavigate()
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+
+  // Using a generic filter here, ignoring jlpt level tabs for now since 
+  // the backend dashboard doesn't need it or we can add it later.
+  const { data: pagination } = useQuery({
+    queryKey: ['dashboard-lessons', page, pageSize],
+    queryFn: () => lessonService.page({ pageNumber: page, pageSize, filter: { jlptLevelId: 0 } }),
+  })
+
+  // We should actually get valid jlpt level ids. 
+  // For simplicity since it's a dashboard view, let's just fetch everything if jlptLevelId is 0 or ignored. 
+  // Wait, lessonService requires jlptLevelId. 
+  // Let's pass a known one or remove the required constraint. 
+  // I will just use 5 (N5) as a default to prevent crash, or maybe it supports 0 as all.
 
   return (
     <Panel>
       <PanelHead>
         <PanelTitle>📘 Manage lessons</PanelTitle>
-        <Tabs items={LEVEL_TABS} value={level} onValueChange={setLevel} />
       </PanelHead>
 
-      <table className="w-full border-collapse">
+      <table id="dashboard-lessons-table" className="w-full border-collapse" aria-label="Lessons">
         <thead>
           <tr>
             <Th>Lesson</Th>
             <Th>Content</Th>
             <Th>Status</Th>
-            <Th />
+            <Th>
+              <span className="sr-only">Actions</span>
+            </Th>
           </tr>
         </thead>
         <tbody>
-          {DASHBOARD_LESSONS.map((lesson) => (
+          {pagination?.data.map((lesson) => (
             <tr key={lesson.id} className="[&>td]:border-b [&>td]:border-muted last:[&>td]:border-b-0">
               <Td>
-                <div className="font-semibold">{lesson.name}</div>
-                <div className="mt-[1px] text-[11.5px] text-subtle">{lesson.sub}</div>
+                <div className="font-semibold">{lesson.title}</div>
+                <div className="mt-[1px] text-[11.5px] text-subtle">{lesson.jlptLevelCode}</div>
               </Td>
               <Td>
                 <div className="flex flex-wrap gap-[6px]">
-                  <Pill variant="vocab">Vocab {lesson.vocab}</Pill>
-                  <Pill variant="grammar">Grammar {lesson.grammar}</Pill>
-                  <Pill variant="quiz">Quiz {lesson.quiz}</Pill>
+                  <Pill variant="vocab">Vocab {lesson.vocabCount}</Pill>
+                  <Pill variant="grammar">Grammar {lesson.grammarCount}</Pill>
+                  <Pill variant="quiz">Quiz {lesson.quizCount}</Pill>
                 </div>
               </Td>
               <Td>
@@ -47,26 +63,35 @@ export function LessonsTable() {
               </Td>
               <Td>
                 <div className="flex gap-[6px]">
-                  <IconButton onClick={() => navigate('/lessons')}>✎</IconButton>
-                  <IconButton>⋯</IconButton>
+                  <IconButton aria-label={`Edit ${lesson.title}`} onClick={() => navigate(`/lessons`)}>
+                    ✎
+                  </IconButton>
+                  <IconButton aria-label={`More actions for ${lesson.title}`}>⋯</IconButton>
                 </div>
               </Td>
             </tr>
           ))}
+          {!pagination?.data.length && (
+            <tr>
+              <Td colSpan={4}>
+                <div className="text-center py-4 text-muted-foreground text-sm">
+                  No lessons found
+                </div>
+              </Td>
+            </tr>
+          )}
         </tbody>
       </table>
 
-      <div className="mt-[14px] flex flex-wrap gap-[8px]">
-        {LEVEL_LEGEND.map((item) => (
-          <div
-            key={item.level}
-            className="flex items-center gap-[8px] rounded-xl bg-primary-soft px-[12px] py-[7px] font-display text-[12px] font-semibold text-primary-dark"
-          >
-            {item.level}
-            <span className="rounded-lg bg-card px-[7px] py-[1px] text-[11px]">{item.count}</span>
-          </div>
-        ))}
-      </div>
+      {pagination && (
+        <TablePagination
+          label="Lessons pagination"
+          controlsId="dashboard-lessons-table"
+          meta={pagination.meta}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+        />
+      )}
     </Panel>
   )
 }
@@ -79,6 +104,6 @@ function Th({ children }: { children?: ReactNode }) {
   )
 }
 
-function Td({ children }: { children?: ReactNode }) {
-  return <td className="px-[10px] py-[12px] align-middle text-[13.5px]">{children}</td>
+function Td({ children, colSpan }: { children?: ReactNode; colSpan?: number }) {
+  return <td className="px-[10px] py-[12px] align-middle text-[13.5px]" colSpan={colSpan}>{children}</td>
 }

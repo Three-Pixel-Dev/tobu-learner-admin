@@ -1,7 +1,10 @@
 import { NavLink } from 'react-router-dom'
 
 import { NAV_SECTIONS, type NavItem } from '@/constants/nav'
+import { useLogoutMutation } from '@/shared/queries/auth.query'
+import { useAuthStore } from '@/shared/stores/auth.store'
 import { cn } from '@/util/cn'
+import { getInitials } from '@/util/initials'
 
 function SidebarLink({ to, icon, label, badge }: NavItem) {
   return (
@@ -29,6 +32,12 @@ function SidebarLink({ to, icon, label, badge }: NavItem) {
 }
 
 export function Sidebar() {
+  const user = useAuthStore((s) => s.user)
+  const logout = useLogoutMutation()
+  const displayName = user?.name?.trim() || 'Admin'
+  const email = user?.email ?? ''
+  const initials = getInitials(displayName, 'A')
+
   return (
     <aside className="sticky top-0 flex h-screen flex-col gap-[4px] overflow-y-auto bg-sidebar px-[16px] py-[22px] text-white">
       <div className="flex items-center gap-[10px] px-[10px] pb-[22px] pt-[6px]">
@@ -53,14 +62,32 @@ export function Sidebar() {
         </div>
       ))}
 
-      <div className="mt-auto flex items-center gap-[10px] rounded-[14px] bg-sidebar-accent p-[12px]">
-        <div className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-warning font-display font-bold text-foreground">
-          A
-        </div>
-        <div>
-          <div className="text-[12.5px] font-semibold">Admin Team</div>
-          <div className="text-[10.5px] text-subtle">admin@tabu.co.jp</div>
-        </div>
+      <div className="mt-auto flex flex-col gap-[8px]">
+        <NavLink
+          to="/profile"
+          className={({ isActive }) =>
+            cn(
+              'flex items-center gap-[10px] rounded-[14px] bg-sidebar-accent p-[12px] transition',
+              isActive ? 'ring-2 ring-primary' : 'hover:brightness-110',
+            )
+          }
+        >
+          <div className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-warning font-display font-bold text-foreground">
+            {initials}
+          </div>
+          <div className="min-w-0">
+            <div className="truncate text-[12.5px] font-semibold">{displayName}</div>
+            <div className="truncate text-[10.5px] text-subtle">{email}</div>
+          </div>
+        </NavLink>
+        <button
+          type="button"
+          onClick={() => logout.mutate()}
+          disabled={logout.isPending}
+          className="rounded-xl px-[12px] py-[8px] text-left text-[12.5px] font-semibold text-sidebar-foreground transition hover:bg-sidebar-accent hover:text-white disabled:opacity-60"
+        >
+          {logout.isPending ? 'Signing out…' : 'Sign out'}
+        </button>
       </div>
     </aside>
   )

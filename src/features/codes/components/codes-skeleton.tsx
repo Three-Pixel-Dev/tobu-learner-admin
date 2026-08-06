@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 /** Matches ROW_GRID in codes-page.tsx. */
 const ROW_GRID =
-  'grid grid-cols-[1.2fr_0.7fr_0.9fr_1fr_0.8fr] items-center gap-[10px] px-[14px] py-[11px]'
+  'grid grid-cols-[1.3fr_1.2fr_0.8fr_1fr_0.8fr] items-center gap-[10px] px-[16px] py-[14px]'
 
 export function CodesSkeleton() {
   return (

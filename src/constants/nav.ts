@@ -17,6 +17,7 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     label: 'Content',
     items: [
+      { to: '/jlpt-levels', icon: '🎓', label: 'JLPT Levels' },
       { to: '/lessons', icon: '📘', label: 'Lessons' },
       { to: '/kana', icon: 'あ', label: 'Kana & Kanji' },
       { to: '/exams', icon: '📝', label: 'Exams' },
@@ -26,12 +27,16 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'People',
     items: [
       { to: '/users', icon: '👤', label: 'Users' },
-      { to: '/codes', icon: '🔑', label: 'Activation codes', badge: '12' },
+      { to: '/codes', icon: '🔑', label: 'Activation codes' },
       { to: '/reminders', icon: '🔔', label: 'Reminders' },
+      { to: '/badges', icon: '🏅', label: 'Badges' },
     ],
   },
   {
     label: 'System',
-    items: [{ to: '/content', icon: '📄', label: 'Content pages' }],
+    items: [
+      { to: '/content', icon: '📄', label: 'Content pages' },
+      { to: '/xp-rewards', icon: '💎', label: 'XP rewards' },
+    ],
   },
 ]

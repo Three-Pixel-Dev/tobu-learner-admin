@@ -1,11 +1,22 @@
+import type { ChangeEventHandler } from 'react'
+
 import { cn } from '@/util/cn'
 
 interface SearchBoxProps {
   placeholder: string
+  value?: string
+  onChange?: ChangeEventHandler<HTMLInputElement>
   className?: string
+  'aria-label'?: string
 }
 
-export function SearchBox({ placeholder, className }: SearchBoxProps) {
+export function SearchBox({
+  placeholder,
+  value,
+  onChange,
+  className,
+  'aria-label': ariaLabel = 'Search',
+}: SearchBoxProps) {
   return (
     <label
       className={cn(
@@ -17,6 +28,9 @@ export function SearchBox({ placeholder, className }: SearchBoxProps) {
       <input
         type="search"
         placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        aria-label={ariaLabel}
         className="w-full border-none bg-transparent text-[13px] text-foreground outline-none placeholder:text-subtle"
       />
     </label>
