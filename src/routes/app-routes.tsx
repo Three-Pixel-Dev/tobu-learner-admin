@@ -14,6 +14,7 @@ import { LessonsSkeleton } from '@/features/lessons/components/lessons-skeleton'
 import { ProfileSkeleton } from '@/features/profile/components/profile-skeleton'
 import { BadgesSkeleton } from '@/features/badges/components/badges-skeleton'
 import { RemindersSkeleton } from '@/features/reminders/components/reminders-skeleton'
+import { ReportsSkeleton } from '@/features/reports/components/reports-skeleton'
 import { UsersSkeleton } from '@/features/users/components/users-skeleton'
 
 const LoginPage = lazy(() =>
@@ -84,6 +85,9 @@ const ContentPage = lazy(() =>
 )
 const XpRewardPage = lazy(() =>
   import('@/features/xp-reward/pages/xp-reward-page').then((m) => ({ default: m.XpRewardPage })),
+)
+const ReportsPage = lazy(() =>
+  import('@/features/reports/pages/reports-page').then((m) => ({ default: m.ReportsPage })),
 )
 const NotFoundPage = lazy(() =>
   import('@/features/errors/pages/not-found-page').then((m) => ({ default: m.NotFoundPage })),
@@ -279,6 +283,14 @@ export function AppRoutes() {
             element={
               <PageBoundary fallback={<XpRewardSkeleton />}>
                 <XpRewardPage />
+              </PageBoundary>
+            }
+          />
+          <Route
+            path="reports"
+            element={
+              <PageBoundary fallback={<ReportsSkeleton />}>
+                <ReportsPage />
               </PageBoundary>
             }
           />
