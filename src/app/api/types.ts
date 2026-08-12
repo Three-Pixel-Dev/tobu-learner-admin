@@ -69,6 +69,22 @@ export interface UserAdminDto {
   createdAt: string
 }
 
+export interface ExamResultLevelCountDto {
+  jlptLevelCode: string | null
+  total: number
+  passed: number
+}
+
+export interface ExamResultUserSummaryDto {
+  total: number
+  passed: number
+  levels: ExamResultLevelCountDto[]
+}
+
+export interface UserAdminDetailDto extends UserAdminDto {
+  certificates: ExamResultUserSummaryDto
+}
+
 export interface CreateUserWithLoginCodePayload {
   loginCode: string
   jlptLevelIds: number[]

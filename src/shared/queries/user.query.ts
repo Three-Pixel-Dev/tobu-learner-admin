@@ -7,6 +7,7 @@ import { userService, type UserPageRequest } from '@/shared/services/user.servic
 export const userKeys = {
   all: ['users'] as const,
   page: (request: UserPageRequest) => [...userKeys.all, 'page', request] as const,
+  detail: (id: number) => [...userKeys.all, 'detail', id] as const,
 }
 
 export function useUsersPageQuery(request: UserPageRequest) {
@@ -16,6 +17,15 @@ export function useUsersPageQuery(request: UserPageRequest) {
     queryFn: () => userService.page(request),
     enabled: Boolean(accessToken),
     placeholderData: (previous) => previous,
+  })
+}
+
+export function useUserDetailQuery(id: number | null) {
+  const accessToken = useAuthStore((s) => s.accessToken)
+  return useQuery({
+    queryKey: userKeys.detail(id ?? 0),
+    queryFn: () => userService.getById(id as number),
+    enabled: Boolean(accessToken) && id != null && id > 0,
   })
 }
 

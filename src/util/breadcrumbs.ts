@@ -21,6 +21,16 @@ export function resolveBreadcrumbs(pathname: string): BreadcrumbItem[] {
     return [{ label: 'Dashboard', to: '/' }, { label: 'Profile' }]
   }
 
+  const userDetail = path.match(/^\/users\/([^/]+)$/)
+  if (userDetail) {
+    return [
+      { label: 'Dashboard', to: '/' },
+      { label: 'People' },
+      { label: 'Users', to: '/users' },
+      { label: 'Learner' },
+    ]
+  }
+
   for (const section of NAV_SECTIONS) {
     for (const item of section.items) {
       if (normalizePath(item.to) === path) {

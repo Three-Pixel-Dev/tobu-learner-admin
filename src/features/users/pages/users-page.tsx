@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useDeferredValue, useMemo, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
+import { Link } from 'react-router-dom'
 import { z } from 'zod'
 
 import { getApiErrorMessage } from '@/app/api/http-client'
@@ -370,7 +371,16 @@ export function UsersPage() {
             <div className="flex items-center gap-[8px]">
               <Avatar initials={user.initials} tone={user.tone} />
               <div>
-                <div className={cn('font-semibold', user.deleted && 'text-subtle')}>{user.name}</div>
+                <Link
+                  to={`/users/${user.id}`}
+                  className={cn(
+                    'font-semibold text-foreground no-underline hover:text-primary-dark hover:underline',
+                    'focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-info',
+                    user.deleted && 'text-subtle',
+                  )}
+                >
+                  {user.name}
+                </Link>
                 <div className="text-[10.5px] text-subtle">{user.detail}</div>
               </div>
             </div>
@@ -379,7 +389,15 @@ export function UsersPage() {
             </div>
             <div className={cn(user.deleted && 'text-disabled')}>{user.streak}</div>
             <div className={cn(user.deleted && 'text-disabled')}>{user.xp}</div>
-            <div>
+            <div className="flex items-center justify-end gap-[6px]">
+              <Link
+                to={`/users/${user.id}`}
+                aria-label={`View ${user.displayName}`}
+                title="View learner"
+                className="flex h-[30px] w-[30px] items-center justify-center rounded-[9px] border-[1.5px] border-border bg-card text-[13px] text-muted-foreground no-underline transition hover:bg-muted hover:text-foreground focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-info"
+              >
+                →
+              </Link>
               {user.deleted ? (
                 <IconButton
                   aria-label={`Restore ${user.displayName}`}

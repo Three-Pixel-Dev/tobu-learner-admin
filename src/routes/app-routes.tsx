@@ -16,6 +16,7 @@ import { BadgesSkeleton } from '@/features/badges/components/badges-skeleton'
 import { RemindersSkeleton } from '@/features/reminders/components/reminders-skeleton'
 import { ReportsSkeleton } from '@/features/reports/components/reports-skeleton'
 import { UsersSkeleton } from '@/features/users/components/users-skeleton'
+import { UserDetailSkeleton } from '@/features/users/components/user-detail-skeleton'
 
 const LoginPage = lazy(() =>
   import('@/features/auth/pages/login-page').then((m) => ({ default: m.LoginPage })),
@@ -60,6 +61,9 @@ const ExamEditorPage = lazy(() =>
 )
 const UsersPage = lazy(() =>
   import('@/features/users/pages/users-page').then((m) => ({ default: m.UsersPage })),
+)
+const UserDetailPage = lazy(() =>
+  import('@/features/users/pages/user-detail-page').then((m) => ({ default: m.UserDetailPage })),
 )
 const CodesPage = lazy(() =>
   import('@/features/codes/pages/codes-page').then((m) => ({ default: m.CodesPage })),
@@ -224,6 +228,14 @@ export function AppRoutes() {
             element={
               <PageBoundary fallback={<UsersSkeleton />}>
                 <UsersPage />
+              </PageBoundary>
+            }
+          />
+          <Route
+            path="users/:id"
+            element={
+              <PageBoundary fallback={<UserDetailSkeleton />}>
+                <UserDetailPage />
               </PageBoundary>
             }
           />
