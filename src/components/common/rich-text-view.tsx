@@ -16,7 +16,7 @@ export function RichTextView({ html, className, label = 'Content' }: RichTextVie
       role="region"
       aria-label={label}
       className={cn(
-        'rich-text-content rounded-[12px] border-[1.5px] border-border bg-card px-[14px] py-[12px] text-[14px] leading-relaxed text-foreground',
+        'rich-text-content overflow-x-hidden rounded-[12px] border-[1.5px] border-border bg-card px-[14px] py-[12px] text-[14px] leading-relaxed text-foreground',
         className,
       )}
       dangerouslySetInnerHTML={{ __html: safeHtml }}

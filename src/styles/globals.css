@@ -147,6 +147,8 @@
 /* Rich text (TipTap) — always uses app body font; no font-family controls in the editor. */
 .rich-text-content {
   font-family: var(--font-body);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .rich-text-content p {

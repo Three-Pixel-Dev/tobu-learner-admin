@@ -4,7 +4,7 @@ import { PageHeaderSkeleton } from '@/components/common/page-header-skeleton'
 import { Panel } from '@/components/ui/panel'
 import { Skeleton } from '@/components/ui/skeleton'
 
-const BLOCK_COUNT = 2
+const BLOCK_COUNT = 3
 
 export function ContentSkeleton() {
   return (
@@ -17,7 +17,7 @@ export function ContentSkeleton() {
             <Skeleton className="h-[16px] w-[160px]" />
             <Skeleton className="h-[32px] w-[80px] rounded-xl" />
           </div>
-          <FieldSkeleton hasLabel={false} controlClassName="h-[110px] rounded-[12px]" />
+          <FieldSkeleton hasLabel={false} controlClassName="h-[180px] rounded-[12px]" />
         </Panel>
       ))}
     </LoadingRegion>
