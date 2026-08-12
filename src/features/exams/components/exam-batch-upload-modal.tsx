@@ -44,7 +44,7 @@ export function ExamBatchUploadModal({
     <FormDialog
       open={open}
       title="Batch Upload Questions"
-      description="Upload an Excel file (.xlsx) containing exam questions. The new questions will be appended to this exam."
+      description="Match Question ID → update; new or blank ID → insert. Questions not in the file are left alone. Use Audio Filename + ZIP upload to attach listening audio."
       onClose={handleClose}
     >
       <div className="space-y-4">
@@ -72,10 +72,11 @@ export function ExamBatchUploadModal({
             disabled={uploadMutation.isPending}
           />
         </div>
-        
+
         <div className="rounded-xl border border-muted bg-muted/40 p-4 text-xs text-subtle">
           <p className="font-semibold text-foreground mb-1">Expected Columns (in order):</p>
           <ol className="list-decimal pl-4 space-y-1">
+            <li>Question ID (stable Excel key; blank = always insert)</li>
             <li>Category Code (VOCAB, GRAMMAR, READING, LISTENING)</li>
             <li>Mondai Title (Group instruction)</li>
             <li>Passage (mainly for Reading)</li>
@@ -92,9 +93,11 @@ export function ExamBatchUploadModal({
             <li>Translation (EN)</li>
             <li>Explanation (MM)</li>
             <li>Explanation (EN)</li>
+            <li>Audio Filename (stem or file, e.g. audio1 or audio1.mp3)</li>
           </ol>
           <p className="mt-2 text-[11px]">
-            * Audio cannot be uploaded via Excel. For listening questions, upload the audio later via the editor.
+            * Audio files are not embedded in Excel. After import, use &quot;Upload audio ZIP&quot; — ZIP entry
+            audio1.mp3 matches Excel value audio1.
           </p>
         </div>
 

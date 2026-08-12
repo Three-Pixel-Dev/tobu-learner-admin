@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Panel } from '@/components/ui/panel'
 import { LevelSwitcher } from '@/features/lessons/components/level-switcher'
+import { LessonBatchUploadModal } from '@/features/lessons/components/lesson-batch-upload-modal'
 import {
   useCreateLessonMutation,
   useDuplicateLessonMutation,
@@ -36,6 +37,7 @@ export function LessonsPage() {
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
   const [createOpen, setCreateOpen] = useState(false)
+  const [batchOpen, setBatchOpen] = useState(false)
   const [newTitle, setNewTitle] = useState('')
   const [pendingDisable, setPendingDisable] = useState<LessonDto | null>(null)
   const [pendingDuplicate, setPendingDuplicate] = useState<LessonDto | null>(null)
@@ -159,6 +161,14 @@ export function LessonsPage() {
             disabled={locked || levelId == null}
             onChange={(e) => setSearchInput(e.target.value)}
           />
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={locked || levelId == null || !currentLevel}
+            onClick={() => setBatchOpen(true)}
+          >
+            Batch upload
+          </Button>
           <Button
             type="button"
             disabled={locked || levelId == null}
@@ -381,6 +391,18 @@ export function LessonsPage() {
           </Button>
         </div>
       </FormDialog>
+
+      <LessonBatchUploadModal
+        open={batchOpen}
+        jlptLevelCode={currentLevel?.code ?? null}
+        jlptLevelName={currentLevel?.name ?? currentLevel?.code}
+        onClose={() => setBatchOpen(false)}
+        onSuccess={(summary) => {
+          setBatchOpen(false)
+          setToast(summary)
+        }}
+        onError={(msg) => setToast(msg)}
+      />
 
       <ConfirmDialog
         open={Boolean(pendingDisable)}

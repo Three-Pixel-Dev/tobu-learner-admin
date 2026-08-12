@@ -94,3 +94,14 @@ export function useUploadExamQuestionsBatch() {
     },
   })
 }
+
+export function useUploadExamQuestionsAudioZip() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, file }: { id: number; file: File }) => examService.uploadQuestionsAudioZip(id, file),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: EXAM_QUERY_KEYS.detail(variables.id) })
+      queryClient.invalidateQueries({ queryKey: EXAM_QUERY_KEYS.all })
+    },
+  })
+}

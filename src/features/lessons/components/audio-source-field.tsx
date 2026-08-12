@@ -34,25 +34,34 @@ export function AudioSourceField({
 }: AudioSourceFieldProps) {
   const groupId = useId()
   const inputRef = useRef<HTMLInputElement>(null)
+  const retainedUploadUrlRef = useRef<string | null>(audioUrl)
   const [mode, setMode] = useState<AudioMode>(audioUrl ? 'upload' : 'tts')
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Parent may set audioUrl after ZIP / hydrate — keep upload mode and remember the URL.
   useEffect(() => {
-    setMode(audioUrl ? 'upload' : 'tts')
+    if (audioUrl) {
+      retainedUploadUrlRef.current = audioUrl
+      setMode('upload')
+    }
   }, [audioUrl])
 
   const selectTts = () => {
     setError(null)
+    if (audioUrl) {
+      retainedUploadUrlRef.current = audioUrl
+    }
     setMode('tts')
+    // Clear saved URL for TTS mode, but keep retained so switching back restores the player.
     onChange(null)
   }
 
   const selectUpload = () => {
     setError(null)
     setMode('upload')
-    if (!audioUrl) {
-      inputRef.current?.click()
+    if (!audioUrl && retainedUploadUrlRef.current) {
+      onChange(retainedUploadUrlRef.current)
     }
   }
 
@@ -70,18 +79,17 @@ export function AudioSourceField({
 
   const onFile = async (file: File | undefined) => {
     if (!file) {
-      if (!audioUrl) setMode('tts')
       return
     }
     setUploading(true)
     setError(null)
     try {
       const uploaded = await uploadAudio(file)
+      retainedUploadUrlRef.current = uploaded.url
       setMode('upload')
       onChange(uploaded.url)
     } catch (err) {
       setError(getApiErrorMessage(err, 'Audio upload failed.'))
-      if (!audioUrl) setMode('tts')
     } finally {
       setUploading(false)
       if (inputRef.current) inputRef.current.value = ''
@@ -90,6 +98,8 @@ export function AudioSourceField({
 
   const canPreview =
     (mode === 'upload' && Boolean(audioUrl)) || (mode === 'tts' && Boolean(speakText.trim()))
+
+  const resolvedUploadUrl = mode === 'upload' ? resolveMediaUrl(audioUrl) : null
 
   return (
     <Field label={hideLabel ? undefined : 'Audio'} className={className}>
@@ -156,6 +166,19 @@ export function AudioSourceField({
             <span className="text-[11px] text-subtle">Mobile will use SpeechSynthesisUtterance</span>
           ) : null}
         </div>
+        {mode === 'upload' && resolvedUploadUrl ? (
+          <div className="rounded-xl border border-[#BFDBFE] bg-[#EFF6FF] px-3 py-2">
+            <audio
+              key={resolvedUploadUrl}
+              controls
+              preload="metadata"
+              className="w-full"
+              src={resolvedUploadUrl}
+            >
+              Your browser does not support audio playback.
+            </audio>
+          </div>
+        ) : null}
         {error ? <p className="text-[11px] text-destructive">{error}</p> : null}
       </div>
     </Field>

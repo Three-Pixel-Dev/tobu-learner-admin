@@ -82,6 +82,11 @@ const ReminderReportPage = lazy(() =>
 const ContentPage = lazy(() =>
   import('@/features/content/pages/content-page').then((m) => ({ default: m.ContentPage })),
 )
+const JlptExamInfoPage = lazy(() =>
+  import('@/features/jlpt-exam-info/pages/jlpt-exam-info-page').then((m) => ({
+    default: m.JlptExamInfoPage,
+  })),
+)
 const XpRewardPage = lazy(() =>
   import('@/features/xp-reward/pages/xp-reward-page').then((m) => ({ default: m.XpRewardPage })),
 )
@@ -271,6 +276,14 @@ export function AppRoutes() {
             element={
               <PageBoundary fallback={<ContentSkeleton />}>
                 <ContentPage />
+              </PageBoundary>
+            }
+          />
+          <Route
+            path="jlpt-exam-info"
+            element={
+              <PageBoundary fallback={<ContentSkeleton />}>
+                <JlptExamInfoPage />
               </PageBoundary>
             }
           />

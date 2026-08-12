@@ -8,6 +8,8 @@ import type { ExamSectionCode } from '@/shared/services/exam.service'
 
 export interface ExamQuestionDraft {
   key: string
+  /** Stable Excel / ZIP fallback key — preserved on save, not shown in UI. */
+  externalCode?: string | null
   categoryCode: ExamSectionCode
   /** Pill label, e.g. もんだい 1 ・ Kanji reading */
   mondaiTitle: string
@@ -19,6 +21,8 @@ export interface ExamQuestionDraft {
   passage: string
   /** Listening audio URL. */
   audioUrl: string
+  /** Normalized stem for ZIP matching — preserved on save. */
+  audioFilename?: string | null
   /** Spoken dialogue for Browser TTS (and mobile fallback). */
   transcript: string
   furigana: string
