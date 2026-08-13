@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Panel } from '@/components/ui/panel'
 import { ExamBatchUploadModal } from '@/features/exams/components/exam-batch-upload-modal'
+import { ExamAudioZipUploadModal } from '@/features/exams/components/exam-audio-zip-upload-modal'
 import {
   EXAM_SECTION_LABEL,
   ExamQuestionEditor,
@@ -73,10 +74,11 @@ export function ExamEditorPage() {
   const [toast, setToast] = useState<string | null>(null)
   const [hydratedKey, setHydratedKey] = useState<string | null>(null)
   const [uploadModalOpen, setUploadModalOpen] = useState(false)
+  const [audioZipModalOpen, setAudioZipModalOpen] = useState(false)
 
   const exam = detailQuery.data
   const examHydrateKey = exam
-    ? `${exam.id}:${exam.updatedAt}:${exam.questions?.length ?? 0}:${exam.questions?.map((q) => q.id).join(',') ?? ''}`
+    ? `${exam.id}:${exam.updatedAt}:${exam.questions?.length ?? 0}:${exam.questions?.map((q) => `${q.id}:${q.audioUrl ?? ''}`).join(',') ?? ''}`
     : null
 
   useEffect(() => {
@@ -101,12 +103,14 @@ export function ExamEditorPage() {
             : emptyChoices(key)
         return {
           key,
+          externalCode: q.externalCode ?? null,
           categoryCode: normalizeSection(q.categoryCode),
           mondaiTitle: q.mondaiTitle ?? '',
           prompt: q.prompt ?? '',
           sentenceStructure: q.sentenceStructure ?? '',
           passage: q.passage ?? '',
           audioUrl: q.audioUrl ?? '',
+          audioFilename: q.audioFilename ?? null,
           transcript: q.transcript ?? '',
           furigana: q.furigana ?? '',
           transMm: q.transMm ?? '',
@@ -185,6 +189,7 @@ export function ExamEditorPage() {
           published,
           comingSoon,
           questions: questions.filter(isQuestionReady).map((q, index) => ({
+            externalCode: q.externalCode?.trim() || undefined,
             categoryCode: q.categoryCode,
             mondaiTitle: q.mondaiTitle.trim() || undefined,
             prompt: q.prompt.trim(),
@@ -194,6 +199,7 @@ export function ExamEditorPage() {
                 : undefined,
             passage: q.categoryCode === 'READING' ? q.passage.trim() || undefined : undefined,
             audioUrl: q.categoryCode === 'LISTENING' ? q.audioUrl.trim() || undefined : undefined,
+            audioFilename: q.audioFilename?.trim() || undefined,
             transcript: q.categoryCode === 'LISTENING' ? q.transcript.trim() || undefined : undefined,
             furigana: q.furigana.trim() || undefined,
             transMm: q.transMm.trim() || undefined,
@@ -228,6 +234,9 @@ export function ExamEditorPage() {
         <div className="flex flex-wrap items-center gap-[10px]">
           <Button type="button" variant="ghost" onClick={() => setUploadModalOpen(true)}>
             Batch Upload
+          </Button>
+          <Button type="button" variant="ghost" onClick={() => setAudioZipModalOpen(true)}>
+            Upload audio ZIP
           </Button>
           <Button type="button" variant="ghost" onClick={() => navigate('/exams')}>
             ← Back
@@ -335,7 +344,27 @@ export function ExamEditorPage() {
         onClose={() => setUploadModalOpen(false)}
         onSuccess={() => {
           setUploadModalOpen(false)
+          setHydratedKey(null)
           setToast('Questions uploaded successfully.')
+        }}
+        onError={(msg) => setToast(msg)}
+      />
+
+      <ExamAudioZipUploadModal
+        examId={id}
+        open={audioZipModalOpen}
+        onClose={() => setAudioZipModalOpen(false)}
+        onSuccess={(result) => {
+          setAudioZipModalOpen(false)
+          setHydratedKey(null)
+          const parts = [`Uploaded ${result.uploaded}/${result.matched} matched`]
+          if (result.unmatchedFiles.length) {
+            parts.push(`unmatched files: ${result.unmatchedFiles.slice(0, 5).join(', ')}`)
+          }
+          if (result.errors.length) {
+            parts.push(`errors: ${result.errors.slice(0, 3).join('; ')}`)
+          }
+          setToast(parts.join(' · '))
         }}
         onError={(msg) => setToast(msg)}
       />

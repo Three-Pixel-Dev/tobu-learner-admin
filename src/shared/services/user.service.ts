@@ -2,6 +2,7 @@ import { http } from '@/app/api/http-client'
 import type {
   ApiResponse,
   CreateUserWithLoginCodePayload,
+  UserAdminDetailDto,
   UserAdminDto,
   UserListMeta,
 } from '@/app/api/types'
@@ -65,5 +66,9 @@ export const userService = {
 
   restore(id: number) {
     return unwrap(http.post<ApiResponse<UserAdminDto>>(`/api/users/${id}/restore`))
+  },
+
+  getById(id: number) {
+    return unwrap(http.get<ApiResponse<UserAdminDetailDto>>(`/api/users/${id}`))
   },
 }

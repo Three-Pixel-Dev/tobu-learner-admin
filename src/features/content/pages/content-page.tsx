@@ -23,7 +23,10 @@ export function ContentPage() {
     return (
       <>
         <PageHeader title="Content pages" subtitle="Static app content shown to users" />
-        <p className="rounded-[12px] border border-[#FCA5A5] bg-destructive-soft px-[14px] py-[12px] text-[13px] font-semibold text-destructive" role="alert">
+        <p
+          className="rounded-[12px] border border-destructive bg-destructive-soft px-[14px] py-[12px] text-[13px] font-semibold text-destructive"
+          role="alert"
+        >
           {getApiErrorMessage(contentQuery.error, 'Failed to load content pages.')}
         </p>
       </>

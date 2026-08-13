@@ -1,7 +1,32 @@
 import { http } from '@/app/api/http-client'
 import type { ApiResponse } from '@/app/api/types'
 
-export type AppContentKey = 'TERMS_CONDITIONS' | 'CONTACT_US'
+export type AppContentKey = 'TERMS_CONDITIONS' | 'PRIVACY_POLICY' | 'CONTACT_US'
+
+export const APP_CONTENT_KEY_META: Record<
+  AppContentKey,
+  { label: string; description: string }
+> = {
+  TERMS_CONDITIONS: {
+    label: 'Terms',
+    description: 'Shown when learners open Terms & conditions.',
+  },
+  PRIVACY_POLICY: {
+    label: 'Privacy',
+    description: 'Shown when learners open Privacy policy.',
+  },
+  CONTACT_US: {
+    label: 'Contact',
+    description: 'Shown on Contact us in the app.',
+  },
+}
+
+export function contentKeyMeta(contentKey: string) {
+  if (contentKey in APP_CONTENT_KEY_META) {
+    return APP_CONTENT_KEY_META[contentKey as AppContentKey]
+  }
+  return { label: contentKey, description: 'Custom app content page.' }
+}
 
 export interface AppContentDto {
   id: number

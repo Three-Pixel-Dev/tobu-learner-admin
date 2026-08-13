@@ -25,6 +25,23 @@ export async function uploadAudio(file: File): Promise<MediaUploadDto> {
   return data.data
 }
 
+export async function uploadImage(file: File): Promise<MediaUploadDto> {
+  const form = new FormData()
+  form.append('file', file)
+  const { data } = await http.post<ApiResponse<MediaUploadDto>>('/api/media/image', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    transformRequest: [
+      (body, headers) => {
+        if (body instanceof FormData) {
+          delete headers['Content-Type']
+        }
+        return body
+      },
+    ],
+  })
+  return data.data
+}
+
 /**
  * Resolve a stored media URL for playback.
  * New uploads are absolute GCS URLs; legacy relative paths (if any) fall back to the API host.

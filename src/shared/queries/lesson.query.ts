@@ -114,3 +114,11 @@ export function useRestoreLessonMutation() {
     onSuccess: invalidate,
   })
 }
+
+export function useUploadLessonsBatchMutation() {
+  const invalidate = useInvalidateLessons()
+  return useMutation({
+    mutationFn: (params: { jlptLevelCode: string; file: File }) => lessonService.batchUpload(params),
+    onSuccess: invalidate,
+  })
+}

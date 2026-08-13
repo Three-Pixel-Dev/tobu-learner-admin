@@ -6,6 +6,7 @@ export interface LessonDto {
   jlptLevelId: number
   jlptLevelCode: string
   title: string
+  externalCode?: string | null
   published: boolean
   deleted: boolean
   vocabCount: number
@@ -68,6 +69,7 @@ export interface LessonDetailDto {
   jlptLevelId: number
   jlptLevelCode: string
   title: string
+  externalCode?: string | null
   published: boolean
   deleted: boolean
   vocabs: VocabDto[]
@@ -124,6 +126,14 @@ export interface SaveLessonContentPayload {
     audioUrl?: string | null
     sortOrder?: number
   }>
+}
+
+export interface LessonBatchUploadResult {
+  created: number
+  updated: number
+  skipped: number
+  published: number
+  lessonIds: number[]
 }
 
 async function unwrap<T>(promise: Promise<{ data: ApiResponse<T> }>): Promise<T> {
@@ -196,5 +206,16 @@ export const lessonService = {
 
   restore(id: number) {
     return unwrap(http.post<ApiResponse<LessonDto>>(`/api/lessons/${id}/restore`))
+  },
+
+  batchUpload(params: { jlptLevelCode: string; file: File }) {
+    const formData = new FormData()
+    formData.append('file', params.file)
+    formData.append('jlptLevelCode', params.jlptLevelCode)
+    return unwrap(
+      http.post<ApiResponse<LessonBatchUploadResult>>('/api/lessons/batch-upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }),
+    )
   },
 }

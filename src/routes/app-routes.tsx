@@ -14,7 +14,9 @@ import { LessonsSkeleton } from '@/features/lessons/components/lessons-skeleton'
 import { ProfileSkeleton } from '@/features/profile/components/profile-skeleton'
 import { BadgesSkeleton } from '@/features/badges/components/badges-skeleton'
 import { RemindersSkeleton } from '@/features/reminders/components/reminders-skeleton'
+import { ReportsSkeleton } from '@/features/reports/components/reports-skeleton'
 import { UsersSkeleton } from '@/features/users/components/users-skeleton'
+import { UserDetailSkeleton } from '@/features/users/components/user-detail-skeleton'
 
 const LoginPage = lazy(() =>
   import('@/features/auth/pages/login-page').then((m) => ({ default: m.LoginPage })),
@@ -60,6 +62,9 @@ const ExamEditorPage = lazy(() =>
 const UsersPage = lazy(() =>
   import('@/features/users/pages/users-page').then((m) => ({ default: m.UsersPage })),
 )
+const UserDetailPage = lazy(() =>
+  import('@/features/users/pages/user-detail-page').then((m) => ({ default: m.UserDetailPage })),
+)
 const CodesPage = lazy(() =>
   import('@/features/codes/pages/codes-page').then((m) => ({ default: m.CodesPage })),
 )
@@ -82,8 +87,16 @@ const ReminderReportPage = lazy(() =>
 const ContentPage = lazy(() =>
   import('@/features/content/pages/content-page').then((m) => ({ default: m.ContentPage })),
 )
+const JlptExamInfoPage = lazy(() =>
+  import('@/features/jlpt-exam-info/pages/jlpt-exam-info-page').then((m) => ({
+    default: m.JlptExamInfoPage,
+  })),
+)
 const XpRewardPage = lazy(() =>
   import('@/features/xp-reward/pages/xp-reward-page').then((m) => ({ default: m.XpRewardPage })),
+)
+const ReportsPage = lazy(() =>
+  import('@/features/reports/pages/reports-page').then((m) => ({ default: m.ReportsPage })),
 )
 const NotFoundPage = lazy(() =>
   import('@/features/errors/pages/not-found-page').then((m) => ({ default: m.NotFoundPage })),
@@ -219,6 +232,14 @@ export function AppRoutes() {
             }
           />
           <Route
+            path="users/:id"
+            element={
+              <PageBoundary fallback={<UserDetailSkeleton />}>
+                <UserDetailPage />
+              </PageBoundary>
+            }
+          />
+          <Route
             path="codes"
             element={
               <PageBoundary fallback={<CodesSkeleton />}>
@@ -275,10 +296,26 @@ export function AppRoutes() {
             }
           />
           <Route
+            path="jlpt-exam-info"
+            element={
+              <PageBoundary fallback={<ContentSkeleton />}>
+                <JlptExamInfoPage />
+              </PageBoundary>
+            }
+          />
+          <Route
             path="xp-rewards"
             element={
               <PageBoundary fallback={<XpRewardSkeleton />}>
                 <XpRewardPage />
+              </PageBoundary>
+            }
+          />
+          <Route
+            path="reports"
+            element={
+              <PageBoundary fallback={<ReportsSkeleton />}>
+                <ReportsPage />
               </PageBoundary>
             }
           />

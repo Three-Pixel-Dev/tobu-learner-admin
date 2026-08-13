@@ -12,6 +12,7 @@ export interface ExamChoiceDto {
 
 export interface ExamQuestionDto {
   id?: number
+  externalCode?: string | null
   categoryId?: number
   categoryCode?: ExamSectionCode | string
   categoryName?: string
@@ -20,6 +21,7 @@ export interface ExamQuestionDto {
   sentenceStructure?: string
   prompt: string
   audioUrl?: string
+  audioFilename?: string | null
   transcript?: string
   furigana?: string
   transMm?: string
@@ -104,6 +106,14 @@ async function unwrap<T>(promise: Promise<{ data: ApiResponse<T> }>): Promise<T>
   return data.data
 }
 
+export interface ExamAudioZipResult {
+  matched: number
+  uploaded: number
+  unmatchedFiles: string[]
+  unmatchedQuestions: string[]
+  errors: string[]
+}
+
 export const examService = {
   page(request: ExamPageRequest) {
     return unwrapPage(
@@ -148,6 +158,16 @@ export const examService = {
     formData.append('file', file)
     return unwrap(
       http.post<ApiResponse<ExamDetailDto>>(`/api/v1/admin/exams/${id}/questions/batch-upload`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+    )
+  },
+
+  uploadQuestionsAudioZip(id: number, file: File) {
+    const formData = new FormData()
+    formData.append('file', file)
+    return unwrap(
+      http.post<ApiResponse<ExamAudioZipResult>>(`/api/v1/admin/exams/${id}/questions/audio-zip`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
     )

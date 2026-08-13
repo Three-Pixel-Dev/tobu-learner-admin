@@ -30,12 +30,14 @@ export const NAV_SECTIONS: NavSection[] = [
       { to: '/codes', icon: '🔑', label: 'Activation codes' },
       { to: '/reminders', icon: '🔔', label: 'Reminders' },
       { to: '/badges', icon: '🏅', label: 'Badges' },
+      { to: '/reports', icon: '🚩', label: 'Content reports' },
     ],
   },
   {
     label: 'System',
     items: [
       { to: '/content', icon: '📄', label: 'Content pages' },
+      { to: '/jlpt-exam-info', icon: '📅', label: 'JLPT exam info' },
       { to: '/xp-rewards', icon: '💎', label: 'XP rewards' },
     ],
   },

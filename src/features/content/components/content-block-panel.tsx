@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 
@@ -11,7 +11,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Panel, PanelHead, PanelTitle } from '@/components/ui/panel'
 import { useUpdateContentMutation } from '@/shared/queries/content.query'
-import type { AppContentDto } from '@/shared/services/content.service'
+import { contentKeyMeta, type AppContentDto } from '@/shared/services/content.service'
+import { cn } from '@/util/cn'
+import { formatRelativeTime } from '@/util/relative-time'
 import { ensureRichTextHtml, isRichTextEmpty } from '@/util/rich-text'
 
 const schema = z.object({
@@ -28,7 +30,12 @@ interface ContentBlockPanelProps {
 
 export function ContentBlockPanel({ content, onSaved }: ContentBlockPanelProps) {
   const [editing, setEditing] = useState(false)
+  const [expanded, setExpanded] = useState(false)
+  const [overflows, setOverflows] = useState(false)
+  const previewRef = useRef<HTMLDivElement>(null)
+  const previewId = useId()
   const updateContent = useUpdateContentMutation()
+  const meta = contentKeyMeta(content.contentKey)
   const {
     register,
     control,
@@ -49,7 +56,21 @@ export function ContentBlockPanel({ content, onSaved }: ContentBlockPanelProps) 
       body: ensureRichTextHtml(content.body),
     })
     setEditing(false)
+    setExpanded(false)
   }, [content.id, content.title, content.body, content.updatedAt, reset])
+
+  useEffect(() => {
+    if (editing || expanded) return
+    const node = previewRef.current
+    if (!node) return
+    const measure = () => {
+      setOverflows(node.scrollHeight > node.clientHeight + 12)
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [content.body, editing, expanded])
 
   const onSubmit = handleSubmit((values) => {
     updateContent.mutate(
@@ -63,7 +84,7 @@ export function ContentBlockPanel({ content, onSaved }: ContentBlockPanelProps) 
       {
         onSuccess: () => {
           setEditing(false)
-          onSaved('Content saved successfully.')
+          onSaved(`${content.title} saved.`)
         },
       },
     )
@@ -77,11 +98,26 @@ export function ContentBlockPanel({ content, onSaved }: ContentBlockPanelProps) 
     setEditing(false)
   }
 
+  const updatedLabel = content.updatedAt ? formatRelativeTime(content.updatedAt) : null
+
   return (
     <Panel>
       <form onSubmit={onSubmit}>
         <PanelHead>
-          <PanelTitle>{editing ? 'Edit content' : content.title}</PanelTitle>
+          <div className="min-w-0">
+            <div className="mb-[6px] flex flex-wrap items-center gap-[8px]">
+              <span className="inline-flex rounded-full bg-muted px-[8px] py-[2px] text-[10.5px] font-bold uppercase tracking-wide text-muted-foreground">
+                {meta.label}
+              </span>
+              {updatedLabel ? (
+                <span className="text-[11.5px] text-subtle">Updated {updatedLabel}</span>
+              ) : null}
+            </div>
+            <PanelTitle className="line-clamp-1" title={content.title}>
+              {editing ? `Edit ${content.title}` : content.title}
+            </PanelTitle>
+            <p className="mt-[4px] text-[12.5px] text-muted-foreground">{meta.description}</p>
+          </div>
           {editing ? (
             <div className="flex items-center gap-[8px]">
               <Button type="button" variant="ghost" onClick={cancel} disabled={updateContent.isPending}>
@@ -92,7 +128,12 @@ export function ContentBlockPanel({ content, onSaved }: ContentBlockPanelProps) 
               </Button>
             </div>
           ) : (
-            <Button type="button" variant="ghost" onClick={() => setEditing(true)}>
+            <Button
+              type="button"
+              variant="ghost"
+              aria-expanded={editing}
+              onClick={() => setEditing(true)}
+            >
               ✎ Edit
             </Button>
           )}
@@ -101,7 +142,11 @@ export function ContentBlockPanel({ content, onSaved }: ContentBlockPanelProps) 
         {editing ? (
           <div className="flex flex-col gap-[16px]">
             <Field label="Title">
-              <Input aria-invalid={Boolean(errors.title)} {...register('title')} />
+              <Input
+                id={`${previewId}-title`}
+                aria-invalid={Boolean(errors.title)}
+                {...register('title')}
+              />
               {errors.title ? (
                 <p className="mt-[5px] text-[12.5px] font-semibold text-destructive" role="alert">
                   {errors.title.message}
@@ -121,6 +166,7 @@ export function ContentBlockPanel({ content, onSaved }: ContentBlockPanelProps) 
                     invalid={Boolean(errors.body)}
                     label={`${content.title} body`}
                     placeholder="Write the page content…"
+                    minHeightClassName="min-h-[280px] max-h-[min(60vh,520px)] overflow-y-auto"
                   />
                 )}
               />
@@ -132,7 +178,38 @@ export function ContentBlockPanel({ content, onSaved }: ContentBlockPanelProps) 
             </Field>
           </div>
         ) : (
-          <RichTextView html={content.body} label={`${content.title} preview`} />
+          <div>
+            <div className="relative">
+              <div
+                ref={previewRef}
+                id={previewId}
+                className={cn('overflow-x-hidden', expanded ? '' : 'max-h-[7.5rem] overflow-hidden')}
+              >
+                <RichTextView
+                  html={content.body}
+                  label={`${content.title} preview`}
+                  className="border-0 bg-transparent p-0"
+                />
+              </div>
+              {!expanded && overflows ? (
+                <div
+                  className="pointer-events-none absolute inset-x-0 bottom-0 h-[56px] bg-gradient-to-t from-card to-transparent"
+                  aria-hidden
+                />
+              ) : null}
+            </div>
+            {overflows ? (
+              <button
+                type="button"
+                className="mt-[10px] cursor-pointer border-0 bg-transparent p-0 font-body text-[14px] font-bold text-primary-dark hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                aria-expanded={expanded}
+                aria-controls={previewId}
+                onClick={() => setExpanded((value) => !value)}
+              >
+                {expanded ? 'Show less' : 'Show more'}
+              </button>
+            ) : null}
+          </div>
         )}
 
         {updateContent.error ? (
