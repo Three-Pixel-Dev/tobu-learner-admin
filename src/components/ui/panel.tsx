@@ -29,11 +29,12 @@ export function PanelHead({ children, className }: PanelHeadProps) {
   )
 }
 
-interface PanelTitleProps {
-  children: ReactNode
-  className?: string
-}
+type PanelTitleProps = HTMLAttributes<HTMLHeadingElement>
 
-export function PanelTitle({ children, className }: PanelTitleProps) {
-  return <h3 className={cn('m-0 font-display text-[16.5px]', className)}>{children}</h3>
+export function PanelTitle({ children, className, ...props }: PanelTitleProps) {
+  return (
+    <h3 className={cn('m-0 font-display text-[16.5px]', className)} {...props}>
+      {children}
+    </h3>
+  )
 }
