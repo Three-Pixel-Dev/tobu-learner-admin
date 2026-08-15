@@ -156,20 +156,12 @@ export const examService = {
   uploadQuestionsBatch(id: number, file: File) {
     const formData = new FormData()
     formData.append('file', file)
-    return unwrap(
-      http.post<ApiResponse<ExamDetailDto>>(`/api/v1/admin/exams/${id}/questions/batch-upload`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
-    )
+    return unwrap(http.post<ApiResponse<ExamDetailDto>>(`/api/v1/admin/exams/${id}/questions/batch-upload`, formData))
   },
 
   uploadQuestionsAudioZip(id: number, file: File) {
     const formData = new FormData()
     formData.append('file', file)
-    return unwrap(
-      http.post<ApiResponse<ExamAudioZipResult>>(`/api/v1/admin/exams/${id}/questions/audio-zip`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
-    )
+    return unwrap(http.post<ApiResponse<ExamAudioZipResult>>(`/api/v1/admin/exams/${id}/questions/audio-zip`, formData))
   },
 }

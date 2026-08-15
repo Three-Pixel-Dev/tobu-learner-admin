@@ -212,10 +212,6 @@ export const lessonService = {
     const formData = new FormData()
     formData.append('file', params.file)
     formData.append('jlptLevelCode', params.jlptLevelCode)
-    return unwrap(
-      http.post<ApiResponse<LessonBatchUploadResult>>('/api/lessons/batch-upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      }),
-    )
+    return unwrap(http.post<ApiResponse<LessonBatchUploadResult>>('/api/lessons/batch-upload', formData))
   },
 }
