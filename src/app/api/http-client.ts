@@ -10,9 +10,6 @@ import { useAuthStore } from '@/shared/stores/auth.store'
 
 export const http = axios.create({
   baseURL: env.apiBaseUrl,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 })
 
 type RetryConfig = InternalAxiosRequestConfig & { _retry?: boolean }
@@ -35,6 +32,21 @@ function setAuthorizationHeader(config: InternalAxiosRequestConfig, token: strin
   const headers = AxiosHeaders.from(config.headers ?? {})
   headers.set('Authorization', value)
   config.headers = headers
+}
+
+/** Let the browser set `multipart/form-data; boundary=...`. A bare Content-Type drops the JWT on retry. */
+function stripContentTypeForFormData(config: InternalAxiosRequestConfig) {
+  if (typeof FormData === 'undefined' || !(config.data instanceof FormData)) {
+    return
+  }
+  if (config.headers instanceof AxiosHeaders) {
+    config.headers.delete('Content-Type')
+    return
+  }
+  if (config.headers) {
+    delete config.headers['Content-Type']
+    delete config.headers['content-type']
+  }
 }
 
 function isAuthPublicUrl(url: string | undefined): boolean {
@@ -87,6 +99,7 @@ async function refreshAccessToken(): Promise<string | null> {
 }
 
 http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  stripContentTypeForFormData(config)
   const token = useAuthStore.getState().accessToken
   if (token) {
     setAuthorizationHeader(config, token)
@@ -122,6 +135,7 @@ http.interceptors.response.use(
       return Promise.reject(error)
     }
 
+    stripContentTypeForFormData(original)
     setAuthorizationHeader(original, nextToken)
     return http(original)
   },
