@@ -91,7 +91,8 @@ export function LessonBatchUploadModal({
               insert), Title, Published (optional TRUE/FALSE)
             </li>
             <li>
-              <span className="font-medium">Vocab</span> — Lesson ID, Word, Meaning MM, Meaning EN
+              <span className="font-medium">Vocab</span> — Lesson ID, Word, Meaning MM, Meaning EN,
+              Reading (pronunciation), Audio Filename (optional)
             </li>
             <li>
               <span className="font-medium">Grammar</span> — Lesson ID, Pattern, Description MM,
@@ -102,13 +103,12 @@ export function LessonBatchUploadModal({
               Translation MM
             </li>
             <li>
-              <span className="font-medium">Quiz</span> — Lesson ID, Mondai, Prompt, Choice1–4,
-              Correct (1–4), Explain MM, Explain EN
+              <span className="font-medium">Quiz</span> — Lesson ID, Mondai, Prompt, Choice 1–4,
+              Correct (1–4), Explain MM, Explain EN, Transcript, Audio Filename (optional)
             </li>
           </ul>
           <p className="mt-2 text-[11px]">
-            Content rows must use a Lesson ID that appears on the Lessons sheet (blank Lesson ID
-            lessons cannot receive content). Audio/images are not imported via Excel.
+            Content rows must use a Lesson ID that appears on the Lessons sheet. Audio files specified in Audio Filename columns can be automatically uploaded and linked using the <strong>📦 Upload Audio ZIP</strong> button.
           </p>
         </div>
 

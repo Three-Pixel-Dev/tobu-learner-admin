@@ -2,13 +2,18 @@ import { Field, FieldRow } from '@/components/common/field'
 import { ItemCard, ItemHead } from '@/components/common/item-card'
 import { DashedButton } from '@/components/ui/dashed-button'
 import { Input } from '@/components/ui/input'
-import { AudioSourceField } from '@/features/lessons/components/audio-source-field'
+import { AudioSourceSelector } from '@/components/audio/audio-source-selector'
+import { type AudioSourceType } from '@/shared/services/lesson.service'
 
 export interface GrammarExampleDraft {
   key: string
   japaneseText: string
   mmTranslation: string
   audioUrl: string | null
+  audioFilename: string | null
+  aiAudioUrl?: string | null
+  aiAudioFilename?: string | null
+  audioSourceType?: AudioSourceType | null
 }
 
 export interface GrammarDraft {
@@ -89,6 +94,7 @@ export function GrammarEditor({ items, onChange }: GrammarEditorProps) {
                   <tr className="border-b border-border bg-muted/40 text-[11px] text-subtle">
                     <th className="px-[10px] py-[8px] font-semibold">Japanese</th>
                     <th className="px-[10px] py-[8px] font-semibold">Myanmar translation</th>
+                    <th className="px-[10px] py-[8px] font-semibold">Audio Filename</th>
                     <th className="px-[10px] py-[8px] font-semibold">Audio</th>
                     <th className="w-[40px] px-[10px] py-[8px]" />
                   </tr>
@@ -96,7 +102,7 @@ export function GrammarEditor({ items, onChange }: GrammarEditorProps) {
                 <tbody>
                   {item.examples.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="px-[10px] py-[14px] text-center text-subtle">
+                      <td colSpan={5} className="px-[10px] py-[14px] text-center text-subtle">
                         No examples yet — add rows that match the mobile grammar cards.
                       </td>
                     </tr>
@@ -122,11 +128,28 @@ export function GrammarEditor({ items, onChange }: GrammarEditorProps) {
                           />
                         </td>
                         <td className="px-[10px] py-[10px]">
-                          <AudioSourceField
-                            hideLabel
-                            speakText={ex.japaneseText}
+                          <Input
+                            value={ex.audioFilename ?? ''}
+                            placeholder="n5_l01_ge01.mp3"
+                            onChange={(e) =>
+                              updateExample(index, ei, { audioFilename: e.target.value || null })
+                            }
+                          />
+                        </td>
+                        <td className="px-[10px] py-[10px] min-w-[280px]">
+                          <AudioSourceSelector
+                            value={ex.audioSourceType}
+                            onChange={(audioSourceType) => updateExample(index, ei, { audioSourceType })}
+                            transcript={ex.japaneseText}
                             audioUrl={ex.audioUrl}
-                            onChange={(audioUrl) => updateExample(index, ei, { audioUrl })}
+                            aiAudioUrl={ex.aiAudioUrl}
+                            onAiAudioGenerated={({ url, filename }) =>
+                              updateExample(index, ei, {
+                                aiAudioUrl: url,
+                                aiAudioFilename: filename,
+                                audioSourceType: 'AI_GENERATED',
+                              })
+                            }
                           />
                         </td>
                         <td className="px-[10px] py-[10px] text-center">
@@ -161,6 +184,7 @@ export function GrammarEditor({ items, onChange }: GrammarEditorProps) {
                       japaneseText: '',
                       mmTranslation: '',
                       audioUrl: null,
+                      audioFilename: null,
                     },
                   ],
                 })

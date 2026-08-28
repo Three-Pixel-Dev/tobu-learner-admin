@@ -109,6 +109,7 @@ async function unwrap<T>(promise: Promise<{ data: ApiResponse<T> }>): Promise<T>
 export interface ExamAudioZipResult {
   matched: number
   uploaded: number
+  matchedDetails?: string[]
   unmatchedFiles: string[]
   unmatchedQuestions: string[]
   errors: string[]

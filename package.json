@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "generate:samples": "node generate_lesson_sample.js && node generate_lesson_audio_sample.js",
     "lint": "eslint .",
     "preview": "vite preview"
   },

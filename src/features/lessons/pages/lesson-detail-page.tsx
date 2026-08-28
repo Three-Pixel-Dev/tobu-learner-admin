@@ -10,6 +10,7 @@ import { Panel } from '@/components/ui/panel'
 import {
   useDuplicateLessonMutation,
   useLessonDetailQuery,
+  usePermanentDeleteLessonMutation,
   useRestoreLessonMutation,
   useSoftDeleteLessonMutation,
 } from '@/shared/queries/lesson.query'
@@ -30,8 +31,10 @@ export function LessonDetailPage() {
   const duplicateMutation = useDuplicateLessonMutation()
   const softDeleteMutation = useSoftDeleteLessonMutation()
   const restoreMutation = useRestoreLessonMutation()
+  const permanentDeleteMutation = usePermanentDeleteLessonMutation()
   const [confirmDisable, setConfirmDisable] = useState(false)
   const [confirmDuplicate, setConfirmDuplicate] = useState(false)
+  const [confirmPermanent, setConfirmPermanent] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
 
   const lesson = detailQuery.data
@@ -124,21 +127,31 @@ export function LessonDetailPage() {
             <span aria-hidden>⧉</span> Duplicate lesson
           </button>
           {lesson.deleted ? (
-            <button
-              type="button"
-              className="mb-[8px] flex w-full cursor-pointer items-center gap-[10px] rounded-xl border-[1.5px] border-border bg-card px-[14px] py-[11px] font-body text-[13.5px] font-semibold hover:bg-muted"
-              disabled={restoreMutation.isPending}
-              onClick={async () => {
-                try {
-                  await restoreMutation.mutateAsync(lesson.id)
-                  setToast('Lesson restored.')
-                } catch (err) {
-                  setToast(getApiErrorMessage(err, 'Could not restore.'))
-                }
-              }}
-            >
-              <span aria-hidden>↩</span> Restore lesson
-            </button>
+            <>
+              <button
+                type="button"
+                className="mb-[8px] flex w-full cursor-pointer items-center gap-[10px] rounded-xl border-[1.5px] border-border bg-card px-[14px] py-[11px] font-body text-[13.5px] font-semibold hover:bg-muted"
+                disabled={restoreMutation.isPending}
+                onClick={async () => {
+                  try {
+                    await restoreMutation.mutateAsync(lesson.id)
+                    setToast('Lesson restored.')
+                  } catch (err) {
+                    setToast(getApiErrorMessage(err, 'Could not restore.'))
+                  }
+                }}
+              >
+                <span aria-hidden>↩</span> Restore lesson
+              </button>
+              <button
+                type="button"
+                className="mb-[8px] flex w-full cursor-pointer items-center gap-[10px] rounded-xl border-[1.5px] border-[#FCA5A5] bg-card px-[14px] py-[11px] font-body text-[13.5px] font-semibold text-destructive hover:bg-destructive-soft"
+                disabled={permanentDeleteMutation.isPending}
+                onClick={() => setConfirmPermanent(true)}
+              >
+                <span aria-hidden>🗑</span> Delete Permanently
+              </button>
+            </>
           ) : (
             <button
               type="button"
@@ -202,6 +215,33 @@ export function LessonDetailPage() {
         }}
         onCancel={() => {
           if (!duplicateMutation.isPending) setConfirmDuplicate(false)
+        }}
+      />
+
+      <ConfirmDialog
+        open={confirmPermanent}
+        title="Permanently delete this lesson?"
+        description={
+          <>
+            <strong className="text-foreground">{lesson.title}</strong> will be permanently removed from database.
+            This action cannot be undone.
+          </>
+        }
+        confirmLabel="Delete Permanently"
+        confirmVariant="destructive"
+        busy={permanentDeleteMutation.isPending}
+        onConfirm={async () => {
+          try {
+            await permanentDeleteMutation.mutateAsync(lesson.id)
+            setConfirmPermanent(false)
+            setToast('Lesson permanently deleted.')
+            navigate('/lessons')
+          } catch (err) {
+            setToast(getApiErrorMessage(err, 'Could not delete permanently.'))
+          }
+        }}
+        onCancel={() => {
+          if (!permanentDeleteMutation.isPending) setConfirmPermanent(false)
         }}
       />
 
