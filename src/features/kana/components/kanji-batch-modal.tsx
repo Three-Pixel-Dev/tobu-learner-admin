@@ -23,14 +23,20 @@ export interface BatchItem {
 
 interface KanjiBatchModalProps {
   levels: JlptLevelDto[]
+  initialLevelId?: number
   onClose: () => void
   onSuccess: () => void
 }
 
-export function KanjiBatchModal({ levels, onClose, onSuccess }: KanjiBatchModalProps) {
+export function KanjiBatchModal({ levels, initialLevelId, onClose, onSuccess }: KanjiBatchModalProps) {
   const [step, setStep] = useState<'input' | 'confirm'>('input')
   const [rawText, setRawText] = useState('')
-  const [defaultLevelId, setDefaultLevelId] = useState<number>(levels[0]?.id || 1)
+  const [defaultLevelId, setDefaultLevelId] = useState<number>(() => {
+    if (initialLevelId && levels.some((l) => l.id === initialLevelId)) {
+      return initialLevelId
+    }
+    return levels[0]?.id || 1
+  })
   const [batchItems, setBatchItems] = useState<BatchItem[]>([])
   const [processing, setProcessing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -121,10 +127,15 @@ export function KanjiBatchModal({ levels, onClose, onSuccess }: KanjiBatchModalP
             )
               .toUpperCase()
               .trim()
-            const matchedLevel =
-              levels.find((l) => l.code?.toUpperCase() === jlptVal) ||
-              levels.find((l) => l.id === defaultLevelId) ||
-              levels[0]
+            const matchedLevel = jlptVal
+              ? levels.find(
+                  (l) =>
+                    l.code?.toUpperCase() === jlptVal ||
+                    l.name?.toUpperCase() === jlptVal ||
+                    jlptVal.endsWith(l.code?.toUpperCase() || '')
+                )
+              : undefined
+            const finalLevel = matchedLevel || levels.find((l) => l.id === defaultLevelId) || levels[0]
 
             const onyomiKey = Object.keys(row).find((k) => /onyomi|on|音/i.test(k))
             const kunyomiKey = Object.keys(row).find((k) => /kunyomi|kun|訓/i.test(k))
@@ -134,8 +145,8 @@ export function KanjiBatchModal({ levels, onClose, onSuccess }: KanjiBatchModalP
             return {
               id: `excel_${idx}_${charVal}`,
               character: charVal,
-              jlptLevelId: matchedLevel?.id || defaultLevelId,
-              jlptLevelCode: matchedLevel?.code || 'N5',
+              jlptLevelId: finalLevel?.id || defaultLevelId,
+              jlptLevelCode: finalLevel?.code || 'N5',
               onyomi: onyomiKey ? String(row[onyomiKey] || '').trim() : '',
               kunyomi: kunyomiKey ? String(row[kunyomiKey] || '').trim() : '',
               meaningMm: mmKey ? String(row[mmKey] || '').trim() : '',

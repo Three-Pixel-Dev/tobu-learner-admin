@@ -2,14 +2,20 @@ import { Field, FieldRow } from '@/components/common/field'
 import { ItemCard, ItemHead } from '@/components/common/item-card'
 import { DashedButton } from '@/components/ui/dashed-button'
 import { Input } from '@/components/ui/input'
-import { AudioSourceField } from '@/features/lessons/components/audio-source-field'
+import { AudioSourceSelector } from '@/components/audio/audio-source-selector'
+import { type AudioSourceType } from '@/shared/services/lesson.service'
 
 export interface VocabDraft {
   key: string
   word: string
+  reading: string
   mmMeaning: string
   enMeaning: string
   audioUrl: string | null
+  audioFilename: string | null
+  aiAudioUrl?: string | null
+  aiAudioFilename?: string | null
+  audioSourceType?: AudioSourceType | null
 }
 
 interface VocabEditorProps {
@@ -40,9 +46,18 @@ export function VocabEditor({ items, onChange }: VocabEditorProps) {
               ✕
             </button>
           </ItemHead>
-          <Field label="Word (kanji/kana)">
-            <Input value={item.word} onChange={(e) => update(index, { word: e.target.value })} />
-          </Field>
+          <FieldRow>
+            <Field label="Word (kanji/kana)">
+              <Input value={item.word} onChange={(e) => update(index, { word: e.target.value })} />
+            </Field>
+            <Field label="Reading / Pronunciation (e.g. りょこう)">
+              <Input
+                value={item.reading}
+                placeholder="りょこう"
+                onChange={(e) => update(index, { reading: e.target.value })}
+              />
+            </Field>
+          </FieldRow>
           <FieldRow className="mt-[10px]">
             <Field label="Myanmar meaning">
               <Input
@@ -57,12 +72,27 @@ export function VocabEditor({ items, onChange }: VocabEditorProps) {
               />
             </Field>
           </FieldRow>
-          <AudioSourceField
-            className="mt-[10px]"
-            speakText={item.word}
-            audioUrl={item.audioUrl}
-            onChange={(audioUrl) => update(index, { audioUrl })}
-          />
+          <FieldRow className="mt-[10px]">
+            <Field label="Audio Filename (Excel stem)">
+              <Input
+                value={item.audioFilename ?? ''}
+                placeholder="n5_l01_v01.mp3"
+                onChange={(e) => update(index, { audioFilename: e.target.value || null })}
+              />
+            </Field>
+          </FieldRow>
+          <div className="mt-[10px]">
+            <AudioSourceSelector
+              value={item.audioSourceType}
+              onChange={(audioSourceType) => update(index, { audioSourceType })}
+              transcript={item.reading || item.word}
+              audioUrl={item.audioUrl}
+              aiAudioUrl={item.aiAudioUrl}
+              onAiAudioGenerated={({ url, filename }) =>
+                update(index, { aiAudioUrl: url, aiAudioFilename: filename, audioSourceType: 'AI_GENERATED' })
+              }
+            />
+          </div>
         </ItemCard>
       ))}
       <DashedButton
@@ -70,7 +100,7 @@ export function VocabEditor({ items, onChange }: VocabEditorProps) {
         onClick={() =>
           onChange([
             ...items,
-            { key: newKey(), word: '', mmMeaning: '', enMeaning: '', audioUrl: null },
+            { key: newKey(), word: '', reading: '', mmMeaning: '', enMeaning: '', audioUrl: null, audioFilename: null },
           ])
         }
       >

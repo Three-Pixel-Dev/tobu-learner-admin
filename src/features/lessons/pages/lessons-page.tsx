@@ -12,15 +12,17 @@ import { Input } from '@/components/ui/input'
 import { Panel } from '@/components/ui/panel'
 import { LevelSwitcher } from '@/features/lessons/components/level-switcher'
 import { LessonBatchUploadModal } from '@/features/lessons/components/lesson-batch-upload-modal'
+import { LessonAudioZipUploadModal } from '@/features/lessons/components/lesson-audio-zip-upload-modal'
 import {
   useCreateLessonMutation,
   useDuplicateLessonMutation,
   useLessonsInfiniteQuery,
+  usePermanentDeleteLessonMutation,
   useRestoreLessonMutation,
   useSoftDeleteLessonMutation,
 } from '@/shared/queries/lesson.query'
 import { useJlptLevelsQuery } from '@/shared/queries/jlpt-level.query'
-import type { LessonDto } from '@/shared/services/lesson.service'
+import type { LessonDto, LessonAudioZipResult } from '@/shared/services/lesson.service'
 import { cn } from '@/util/cn'
 
 export function LessonsPage() {
@@ -38,9 +40,12 @@ export function LessonsPage() {
   const [search, setSearch] = useState('')
   const [createOpen, setCreateOpen] = useState(false)
   const [batchOpen, setBatchOpen] = useState(false)
+  const [audioZipOpen, setAudioZipOpen] = useState(false)
   const [newTitle, setNewTitle] = useState('')
+  const [includeDisabled, setIncludeDisabled] = useState(false)
   const [pendingDisable, setPendingDisable] = useState<LessonDto | null>(null)
   const [pendingDuplicate, setPendingDuplicate] = useState<LessonDto | null>(null)
+  const [pendingPermanentDelete, setPendingPermanentDelete] = useState<LessonDto | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
 
@@ -68,11 +73,12 @@ export function LessonsPage() {
   }, [searchInput])
 
   const currentLevel = levels.find((l) => l.id === levelId) ?? null
-  const lessonsQuery = useLessonsInfiniteQuery(levelId, search)
+  const lessonsQuery = useLessonsInfiniteQuery(levelId, search, includeDisabled)
   const createMutation = useCreateLessonMutation()
   const softDeleteMutation = useSoftDeleteLessonMutation()
   const duplicateMutation = useDuplicateLessonMutation()
   const restoreMutation = useRestoreLessonMutation()
+  const permanentDeleteMutation = usePermanentDeleteLessonMutation()
 
   const rows = useMemo(
     () => lessonsQuery.data?.pages.flatMap((page) => page.data) ?? [],
@@ -144,6 +150,17 @@ export function LessonsPage() {
     }
   }
 
+  const handlePermanentDelete = async () => {
+    if (!pendingPermanentDelete) return
+    try {
+      await permanentDeleteMutation.mutateAsync(pendingPermanentDelete.id)
+      setPendingPermanentDelete(null)
+      setToast('Lesson permanently deleted.')
+    } catch (err) {
+      setToast(getApiErrorMessage(err, 'Could not delete lesson permanently.'))
+    }
+  }
+
   const locked = currentLevel != null && !currentLevel.unlocked
 
   return (
@@ -152,6 +169,15 @@ export function LessonsPage() {
         <div className="flex flex-wrap items-center gap-[12px]">
           <span className="text-[12.5px] text-subtle">Content / Lessons /</span>
           <LevelSwitcher levels={levels} value={levelId} onChange={selectLevel} />
+          <label className="flex cursor-pointer items-center gap-[6px] text-[12.5px] font-medium text-subtle select-none">
+            <input
+              type="checkbox"
+              checked={includeDisabled}
+              onChange={(e) => setIncludeDisabled(e.target.checked)}
+              className="h-[14px] w-[14px] rounded border-border accent-primary cursor-pointer"
+            />
+            Show disabled
+          </label>
         </div>
         <div className="flex flex-wrap items-center gap-[10px]">
           <Input
@@ -168,6 +194,14 @@ export function LessonsPage() {
             onClick={() => setBatchOpen(true)}
           >
             Batch upload
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={locked || levelId == null || !currentLevel}
+            onClick={() => setAudioZipOpen(true)}
+          >
+            📦 Upload audio ZIP
           </Button>
           <Button
             type="button"
@@ -335,6 +369,12 @@ export function LessonsPage() {
                                 })
                               },
                             },
+                            {
+                              id: 'permanent-delete',
+                              label: 'Delete Permanently',
+                              tone: 'danger' as const,
+                              onSelect: () => setPendingPermanentDelete(lesson),
+                            },
                           ]
                         : [
                             {
@@ -404,6 +444,21 @@ export function LessonsPage() {
         onError={(msg) => setToast(msg)}
       />
 
+      <LessonAudioZipUploadModal
+        open={audioZipOpen}
+        jlptLevelCode={currentLevel?.code ?? null}
+        onClose={() => setAudioZipOpen(false)}
+        onSuccess={(res: LessonAudioZipResult) => {
+          setAudioZipOpen(false)
+          setToast(
+            `Audio ZIP matched ${res.matched} files (${res.uploaded} uploaded). ${
+              res.unmatchedFiles.length
+            } unmatched files.`,
+          )
+        }}
+        onError={(msg) => setToast(msg)}
+      />
+
       <ConfirmDialog
         open={Boolean(pendingDisable)}
         title="Disable this lesson?"
@@ -441,6 +496,26 @@ export function LessonsPage() {
         onConfirm={() => void handleDuplicate()}
         onCancel={() => {
           if (!duplicateMutation.isPending) setPendingDuplicate(null)
+        }}
+      />
+
+      <ConfirmDialog
+        open={Boolean(pendingPermanentDelete)}
+        title="Permanently Delete Lesson?"
+        description={
+          pendingPermanentDelete ? (
+            <>
+              Are you sure you want to permanently delete{' '}
+              <strong className="text-foreground">{pendingPermanentDelete.title}</strong>? This action cannot be undone.
+            </>
+          ) : null
+        }
+        confirmLabel="Delete Permanently"
+        confirmVariant="destructive"
+        busy={permanentDeleteMutation.isPending}
+        onConfirm={() => void handlePermanentDelete()}
+        onCancel={() => {
+          if (!permanentDeleteMutation.isPending) setPendingPermanentDelete(null)
         }}
       />
 

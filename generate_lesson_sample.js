@@ -10,10 +10,10 @@ const lessons = [
 ]
 
 const vocab = [
-  ['Lesson ID', 'Word', 'Meaning MM', 'Meaning EN'],
-  ['N5-L01', 'こんにちは', 'မင်္ဂလာပါ', 'Hello'],
-  ['N5-L01', 'ありがとう', 'ကျေးဇူးတင်ပါတယ်', 'Thank you'],
-  ['N5-L02', 'おかあさん', 'အမေ', 'Mother'],
+  ['Lesson ID', 'Word', 'Meaning MM', 'Meaning EN', 'Reading', 'Audio Filename'],
+  ['N5-L01', 'こんにちは', 'မင်္ဂလာပါ', 'Hello', 'こんにちは', 'n5_l01_v01.mp3'],
+  ['N5-L01', 'ありがとう', 'ကျေးဇူးတင်ပါတယ်', 'Thank you', 'ありがとう', 'n5_l01_v02.mp3'],
+  ['N5-L02', 'おかあさん', 'အမေ', 'Mother', 'おかあさん', 'n5_l02_v01.mp3'],
 ]
 
 const grammar = [
@@ -23,9 +23,9 @@ const grammar = [
 ]
 
 const grammarExamples = [
-  ['Lesson ID', 'Pattern', 'Japanese', 'Translation MM'],
-  ['N5-L01', 'Noun + です', 'がくせいです。', 'ကျောင်းသားပါ။'],
-  ['N5-L02', 'わたしの + Noun', 'わたしのおかあさんです。', 'ကျွန်တော့်အမေပါ။'],
+  ['Lesson ID', 'Pattern', 'Japanese', 'Translation MM', 'Audio Filename'],
+  ['N5-L01', 'Noun + です', 'がくせいです。', 'ကျောင်းသားပါ။', 'n5_l01_ge01.mp3'],
+  ['N5-L02', 'わたしの + Noun', 'わたしのおかあさんです。', 'ကျွန်တော့်အမေပါ။', 'n5_l02_ge01.mp3'],
 ]
 
 const quiz = [
@@ -40,6 +40,8 @@ const quiz = [
     'Correct (1-4)',
     'Explain MM',
     'Explain EN',
+    'Transcript',
+    'Audio Filename',
   ],
   [
     'N5-L01',
@@ -52,6 +54,8 @@ const quiz = [
     1,
     'မင်္ဂလာပါ ဆိုသည်မှာ こんにちは ဖြစ်သည်။',
     'Hello is こんにちは.',
+    'こんにちは。わたしは たなかです。',
+    'n5_l01_q01.mp3',
   ],
   [
     'N5-L02',
@@ -64,6 +68,8 @@ const quiz = [
     2,
     'おかあさん = အမေ',
     'おかあさん means mother.',
+    '',
+    '',
   ],
 ]
 

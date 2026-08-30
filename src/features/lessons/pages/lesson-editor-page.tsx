@@ -11,12 +11,14 @@ import { Panel } from '@/components/ui/panel'
 import { GrammarEditor, type GrammarDraft } from '@/features/lessons/components/grammar-editor'
 import { QuizEditor, type QuizDraft } from '@/features/lessons/components/quiz-editor'
 import { VocabEditor, type VocabDraft } from '@/features/lessons/components/vocab-editor'
+import { LessonAudioZipUploadModal } from '@/features/lessons/components/lesson-audio-zip-upload-modal'
 import {
   useLessonDetailQuery,
   useSaveLessonContentMutation,
   useSetLessonPublishedMutation,
   useUpdateLessonMutation,
 } from '@/shared/queries/lesson.query'
+import type { LessonAudioZipResult } from '@/shared/services/lesson.service'
 
 function draftKey(prefix: string, id: number | null | undefined, index: number) {
   return id != null ? `${prefix}-${id}` : `${prefix}-new-${index}`
@@ -36,6 +38,7 @@ export function LessonEditorPage() {
   const [vocabs, setVocabs] = useState<VocabDraft[]>([])
   const [grammars, setGrammars] = useState<GrammarDraft[]>([])
   const [quizzes, setQuizzes] = useState<QuizDraft[]>([])
+  const [audioZipOpen, setAudioZipOpen] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
   const [hydratedId, setHydratedId] = useState<number | null>(null)
 
@@ -48,9 +51,14 @@ export function LessonEditorPage() {
       lesson.vocabs.map((v, index) => ({
         key: draftKey('v', v.id, index),
         word: v.word ?? '',
+        reading: v.reading ?? '',
         mmMeaning: v.mmMeaning ?? '',
         enMeaning: v.enMeaning ?? '',
         audioUrl: v.audioUrl ?? null,
+        audioFilename: v.audioFilename ?? null,
+        aiAudioUrl: v.aiAudioUrl ?? null,
+        aiAudioFilename: v.aiAudioFilename ?? null,
+        audioSourceType: v.audioSourceType ?? 'AUDIO_FILE',
       })),
     )
     setGrammars(
@@ -64,6 +72,10 @@ export function LessonEditorPage() {
           japaneseText: ex.japaneseText ?? '',
           mmTranslation: ex.mmTranslation ?? '',
           audioUrl: ex.audioUrl ?? null,
+          audioFilename: ex.audioFilename ?? null,
+          aiAudioUrl: ex.aiAudioUrl ?? null,
+          aiAudioFilename: ex.aiAudioFilename ?? null,
+          audioSourceType: ex.audioSourceType ?? 'AUDIO_FILE',
         })),
       })),
     )
@@ -72,6 +84,12 @@ export function LessonEditorPage() {
         key: draftKey('q', q.id, index),
         mondai: q.mondai ?? '',
         prompt: q.prompt ?? '',
+        audioUrl: q.audioUrl ?? null,
+        audioFilename: q.audioFilename ?? null,
+        aiAudioUrl: q.aiAudioUrl ?? null,
+        aiAudioFilename: q.aiAudioFilename ?? null,
+        audioSourceType: q.audioSourceType ?? 'AUDIO_FILE',
+        transcript: q.transcript ?? '',
         choices: (q.choices?.length
           ? q.choices
           : [
@@ -128,9 +146,14 @@ export function LessonEditorPage() {
             .filter((v) => v.word.trim())
             .map((v) => ({
               word: v.word.trim(),
+              reading: v.reading.trim() || null,
               mmMeaning: v.mmMeaning.trim() || null,
               enMeaning: v.enMeaning.trim() || null,
               audioUrl: v.audioUrl,
+              audioFilename: v.audioFilename ? v.audioFilename.trim() : null,
+              aiAudioUrl: v.aiAudioUrl ?? null,
+              aiAudioFilename: v.aiAudioFilename ?? null,
+              audioSourceType: v.audioSourceType ?? 'AUDIO_FILE',
             })),
           grammars: grammars
             .filter((g) => g.pattern.trim())
@@ -144,6 +167,10 @@ export function LessonEditorPage() {
                   japaneseText: ex.japaneseText.trim(),
                   mmTranslation: ex.mmTranslation.trim() || null,
                   audioUrl: ex.audioUrl,
+                  audioFilename: ex.audioFilename ? ex.audioFilename.trim() : null,
+                  aiAudioUrl: ex.aiAudioUrl ?? null,
+                  aiAudioFilename: ex.aiAudioFilename ?? null,
+                  audioSourceType: ex.audioSourceType ?? 'AUDIO_FILE',
                   sortOrder: ei,
                 })),
             })),
@@ -153,6 +180,12 @@ export function LessonEditorPage() {
               questionType: 'MULTIPLE_CHOICE',
               mondai: q.mondai.trim() || null,
               prompt: q.prompt.trim(),
+              audioUrl: q.audioUrl,
+              audioFilename: q.audioFilename ? q.audioFilename.trim() : null,
+              aiAudioUrl: q.aiAudioUrl ?? null,
+              aiAudioFilename: q.aiAudioFilename ?? null,
+              audioSourceType: q.audioSourceType ?? 'AUDIO_FILE',
+              transcript: q.transcript.trim() || null,
               choices: q.choices
                 .filter((c) => c.choiceText.trim())
                 .map((c) => ({
@@ -171,7 +204,6 @@ export function LessonEditorPage() {
       } else {
         setToast('Lesson saved.')
       }
-      setHydratedId(null)
     } catch (err) {
       setToast(getApiErrorMessage(err, 'Could not save lesson.'))
     }
@@ -187,6 +219,9 @@ export function LessonEditorPage() {
         <div className="flex flex-wrap items-center gap-[10px]">
           <Button type="button" variant="ghost" onClick={() => navigate(`/lessons/${lesson.id}`)}>
             ← Back
+          </Button>
+          <Button type="button" variant="ghost" disabled={busy} onClick={() => setAudioZipOpen(true)}>
+            📦 Upload audio ZIP
           </Button>
           <Button type="button" variant="ghost" disabled={busy} onClick={() => saveAll(false)}>
             {busy ? 'Saving…' : 'Save'}
@@ -224,6 +259,22 @@ export function LessonEditorPage() {
         {tab === 'grammar' ? <GrammarEditor items={grammars} onChange={setGrammars} /> : null}
         {tab === 'quiz' ? <QuizEditor items={quizzes} onChange={setQuizzes} /> : null}
       </Panel>
+
+      <LessonAudioZipUploadModal
+        open={audioZipOpen}
+        lessonId={lesson.id}
+        onClose={() => setAudioZipOpen(false)}
+        onSuccess={(res: LessonAudioZipResult) => {
+          setAudioZipOpen(false)
+          setToast(
+            `Audio ZIP matched ${res.matched} questions (${res.uploaded} uploaded). ${
+              res.unmatchedFiles.length
+            } unmatched files.`,
+          )
+          detailQuery.refetch()
+        }}
+        onError={(msg) => setToast(msg)}
+      />
 
       <Toast message={toast} onDismiss={() => setToast(null)} />
     </>

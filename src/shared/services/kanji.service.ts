@@ -108,4 +108,8 @@ export const kanjiService = {
   restore(id: number) {
     return unwrap(http.post<ApiResponse<KanjiDto>>(`/api/v1/admin/kanji/${id}/restore`))
   },
+
+  permanentDelete(id: number) {
+    return unwrap(http.delete<ApiResponse<void>>(`/api/v1/admin/kanji/${id}/permanent`))
+  },
 }

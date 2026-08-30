@@ -2,34 +2,50 @@ import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { FormDialog } from '@/components/common/form-dialog'
-import { useUploadExamQuestionsAudioZip } from '@/features/exams/exam.query'
+import {
+  useUploadLessonAudioZipMutation,
+  useUploadLevelLessonsAudioZipMutation,
+} from '@/shared/queries/lesson.query'
 import { getApiErrorMessage } from '@/app/api/http-client'
-import type { ExamAudioZipResult } from '@/shared/services/exam.service'
+import type { LessonAudioZipResult } from '@/shared/services/lesson.service'
 
-interface ExamAudioZipUploadModalProps {
-  examId: number
+interface LessonAudioZipUploadModalProps {
+  lessonId?: number | null
+  jlptLevelCode?: string | null
   open: boolean
   onClose: () => void
-  onSuccess: (result: ExamAudioZipResult) => void
+  onSuccess: (result: LessonAudioZipResult) => void
   onError: (msg: string) => void
 }
 
-export function ExamAudioZipUploadModal({
-  examId,
+export function LessonAudioZipUploadModal({
+  lessonId,
+  jlptLevelCode,
   open,
   onClose,
   onSuccess,
   onError,
-}: ExamAudioZipUploadModalProps) {
-  const uploadMutation = useUploadExamQuestionsAudioZip()
+}: LessonAudioZipUploadModalProps) {
+  const uploadSingleMutation = useUploadLessonAudioZipMutation()
+  const uploadLevelMutation = useUploadLevelLessonsAudioZipMutation()
   const [file, setFile] = useState<File | null>(null)
-  const [result, setResult] = useState<ExamAudioZipResult | null>(null)
+  const [result, setResult] = useState<LessonAudioZipResult | null>(null)
   const [activeTab, setActiveTab] = useState<'matched' | 'unmatched' | 'missing' | 'errors'>('matched')
+
+  const isPending = uploadSingleMutation.isPending || uploadLevelMutation.isPending
 
   const handleUpload = async () => {
     if (!file) return
     try {
-      const res = await uploadMutation.mutateAsync({ id: examId, file })
+      let res: LessonAudioZipResult
+      if (lessonId) {
+        res = await uploadSingleMutation.mutateAsync({ id: lessonId, file })
+      } else if (jlptLevelCode) {
+        res = await uploadLevelMutation.mutateAsync({ jlptLevelCode, file })
+      } else {
+        onError('No lesson ID or level specified for ZIP upload.')
+        return
+      }
       setFile(null)
       setResult(res)
       onSuccess(res)
@@ -38,12 +54,12 @@ export function ExamAudioZipUploadModal({
       else if (res.unmatchedFiles.length > 0) setActiveTab('unmatched')
       else setActiveTab('missing')
     } catch (err) {
-      onError(getApiErrorMessage(err, 'Failed to upload audio ZIP.'))
+      onError(getApiErrorMessage(err, 'Failed to upload lesson audio ZIP.'))
     }
   }
 
   const handleClose = () => {
-    if (uploadMutation.isPending) return
+    if (isPending) return
     setFile(null)
     setResult(null)
     onClose()
@@ -57,11 +73,15 @@ export function ExamAudioZipUploadModal({
   return (
     <FormDialog
       open={open}
-      title={result ? 'Audio ZIP Upload Results' : 'Upload Exam Audio ZIP'}
+      title={result ? 'Audio ZIP Upload Results' : 'Upload Lesson Audio ZIP'}
       description={
         result
           ? 'Review matched, uploaded, and unmatched audio files below.'
-          : 'Match ZIP audio stems to exam questions via Audio Filename (Excel) or Question ID fallback.'
+          : lessonId
+            ? 'Match ZIP audio stems to quiz questions and vocabulary in this lesson.'
+            : jlptLevelCode
+              ? `Match ZIP audio stems to quiz questions and vocabulary across all ${jlptLevelCode} lessons.`
+              : 'Upload audio ZIP'
       }
       onClose={handleClose}
     >
@@ -88,35 +108,34 @@ export function ExamAudioZipUploadModal({
                 file:py-2 file:text-sm
                 file:font-semibold file:text-foreground
                 hover:file:bg-muted/80 cursor-pointer"
-              disabled={uploadMutation.isPending}
+              disabled={isPending}
             />
           </div>
 
           <div className="rounded-xl border border-muted bg-muted/40 p-4 text-xs text-subtle">
-            <p className="font-semibold text-foreground mb-1">Matching</p>
+            <p className="font-semibold text-foreground mb-1">Audio Filename Matching</p>
             <ul className="list-disc pl-4 space-y-1">
               <li>
-                Excel <code>audio1</code> or <code>audio1.mp3</code> ↔ ZIP entry{' '}
-                <code>audio1.mp3</code> (case-insensitive stem)
+                Excel <code>Audio Filename</code> column (e.g. <code>n5_l01_v01.mp3</code>) ↔ ZIP entry{' '}
+                <code>n5_l01_v01.mp3</code>
               </li>
               <li>
-                If Audio Filename is blank, ZIP stem can match Question ID (e.g.{' '}
-                <code>n4_q_0107.mp3</code>)
+                Matches both <strong>Vocab items</strong> and <strong>Quiz questions</strong>
               </li>
-              <li>Supported: mp3, wav, ogg, m4a, aac, webm</li>
+              <li>Supported audio formats: mp3, wav, ogg, m4a, aac, webm</li>
             </ul>
           </div>
 
           <div className="mt-6 flex justify-end gap-3">
-            <Button type="button" variant="ghost" onClick={handleClose} disabled={uploadMutation.isPending}>
+            <Button type="button" variant="ghost" onClick={handleClose} disabled={isPending}>
               Cancel
             </Button>
             <Button
               type="button"
               onClick={() => void handleUpload()}
-              disabled={!file || uploadMutation.isPending}
+              disabled={!file || isPending}
             >
-              {uploadMutation.isPending ? 'Uploading…' : 'Upload ZIP'}
+              {isPending ? 'Uploading & Matching…' : 'Upload ZIP'}
             </Button>
           </div>
         </div>
@@ -225,7 +244,7 @@ export function ExamAudioZipUploadModal({
                   result.unmatchedFiles.map((filename, idx) => (
                     <div key={idx} className="flex items-start gap-2 text-amber-600 dark:text-amber-400 font-mono text-[11.5px]">
                       <span>⚠️</span>
-                      <span>{filename} (No question shares this filename stem)</span>
+                      <span>{filename} (No question or vocab shares this filename stem)</span>
                     </div>
                   ))
                 )}
@@ -235,7 +254,7 @@ export function ExamAudioZipUploadModal({
             {activeTab === 'missing' && (
               <>
                 {result.unmatchedQuestions.length === 0 ? (
-                  <p className="py-4 text-center text-muted-foreground">All questions expecting audio received audio!</p>
+                  <p className="py-4 text-center text-muted-foreground">All questions & vocabs with audio filenames received audio!</p>
                 ) : (
                   result.unmatchedQuestions.map((item, idx) => (
                     <div key={idx} className="flex items-start gap-2 text-amber-600 dark:text-amber-400 font-mono text-[11.5px]">

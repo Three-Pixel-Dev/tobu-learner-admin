@@ -17,6 +17,7 @@ export function KanjiDetail() {
   const [selectedLevelId, setSelectedLevelId] = useState<number | undefined>(undefined)
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
+  const [includeDisabled, setIncludeDisabled] = useState(false)
   const [loading, setLoading] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)
@@ -78,7 +79,7 @@ export function KanjiDetail() {
           filter: {
             jlptLevelId: selectedLevelId,
             search: search || undefined,
-            includeDisabled: true,
+            includeDisabled,
           },
         })
         setKanjiList((prev) => (append ? [...prev, ...result.data] : result.data))
@@ -101,7 +102,7 @@ export function KanjiDetail() {
         setLoadingMore(false)
       }
     },
-    [selectedLevelId, search],
+    [selectedLevelId, search, includeDisabled],
   )
 
   const resetAndLoad = useCallback(() => {
@@ -251,6 +252,25 @@ export function KanjiDetail() {
     }
   }
 
+  const handleRestore = async (id: number) => {
+    try {
+      await kanjiService.restore(id)
+      resetAndLoad()
+    } catch (err) {
+      console.error('Failed to restore Kanji:', err)
+    }
+  }
+
+  const handlePermanentDelete = async (id: number) => {
+    if (!confirm('Permanently delete this Kanji item? This action cannot be undone.')) return
+    try {
+      await kanjiService.permanentDelete(id)
+      resetAndLoad()
+    } catch (err) {
+      console.error('Failed to permanently delete Kanji:', err)
+    }
+  }
+
   return (
     <div className="space-y-4">
       {/* Header controls */}
@@ -274,6 +294,15 @@ export function KanjiDetail() {
               </option>
             ))}
           </select>
+          <label className="flex items-center gap-1.5 text-xs text-gray-600 font-medium cursor-pointer">
+            <input
+              type="checkbox"
+              checked={includeDisabled}
+              onChange={(e) => setIncludeDisabled(e.target.checked)}
+              className="rounded border-gray-300"
+            />
+            Show Disabled Kanji
+          </label>
           {totalElements > 0 ? (
             <span className="text-[11px] text-subtle">
               Showing {kanjiList.length} of {totalElements}
@@ -302,7 +331,7 @@ export function KanjiDetail() {
             {kanjiList.map((item) => (
               <div
                 key={item.id}
-                className={`rounded-2xl border-[1.5px] border-border bg-card p-4 transition-all ${item.deleted ? 'opacity-50' : 'hover:border-[#CBD5E1]'
+                className={`rounded-2xl border-[1.5px] border-border bg-card p-4 transition-all ${item.deleted ? 'opacity-60 bg-red-50/20 border-red-200' : 'hover:border-[#CBD5E1]'
                   }`}
               >
                 <div className="flex items-start justify-between">
@@ -311,10 +340,15 @@ export function KanjiDetail() {
                       {item.character}
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="rounded bg-sky-100 px-2 py-0.5 text-[10px] font-extrabold text-sky-800">
                           {item.jlptLevelCode || 'N5'}
                         </span>
+                        {item.deleted && (
+                          <span className="rounded bg-red-100 px-2 py-0.5 text-[10px] font-extrabold text-red-700">
+                            Disabled
+                          </span>
+                        )}
                         <span className="text-xs font-semibold text-subtle">
                           {item.strokeCount || (item.strokeOrderJson?.strokes?.length || 0)} strokes
                         </span>
@@ -326,18 +360,41 @@ export function KanjiDetail() {
                   </div>
 
                   <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => openEditModal(item)}
-                      className="rounded-lg p-1.5 text-xs text-gray-600 hover:bg-gray-100"
-                    >
-                      ✏️
-                    </button>
-                    <button
-                      onClick={() => handleDelete(item.id)}
-                      className="rounded-lg p-1.5 text-xs text-red-600 hover:bg-red-50"
-                    >
-                      🗑️
-                    </button>
+                    {item.deleted ? (
+                      <>
+                        <button
+                          onClick={() => handleRestore(item.id)}
+                          title="Restore Kanji"
+                          className="rounded-lg p-1.5 text-xs text-emerald-700 hover:bg-emerald-50 font-bold flex items-center gap-1"
+                        >
+                          🔄 Restore
+                        </button>
+                        <button
+                          onClick={() => handlePermanentDelete(item.id)}
+                          title="Permanently Delete"
+                          className="rounded-lg p-1.5 text-xs text-red-600 hover:bg-red-50 font-bold flex items-center gap-1"
+                        >
+                          ❌ Delete
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => openEditModal(item)}
+                          title="Edit Kanji"
+                          className="rounded-lg p-1.5 text-xs text-gray-600 hover:bg-gray-100"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          title="Disable Kanji"
+                          className="rounded-lg p-1.5 text-xs text-red-600 hover:bg-red-50"
+                        >
+                          🗑️
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -364,6 +421,7 @@ export function KanjiDetail() {
       {showBatchModal && (
         <KanjiBatchModal
           levels={levels}
+          initialLevelId={selectedLevelId}
           onClose={() => setShowBatchModal(false)}
           onSuccess={resetAndLoad}
         />

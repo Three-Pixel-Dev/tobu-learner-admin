@@ -12,15 +12,19 @@ const LESSON_PAGE_SIZE = 20
 
 export const lessonKeys = {
   all: ['lessons'] as const,
-  infinite: (jlptLevelId: number, search: string) =>
-    [...lessonKeys.all, 'infinite', jlptLevelId, search] as const,
+  infinite: (jlptLevelId: number, search: string, includeDisabled = false) =>
+    [...lessonKeys.all, 'infinite', jlptLevelId, search, includeDisabled] as const,
   detail: (id: number) => [...lessonKeys.all, 'detail', id] as const,
 }
 
-export function useLessonsInfiniteQuery(jlptLevelId: number | null, search: string) {
+export function useLessonsInfiniteQuery(
+  jlptLevelId: number | null,
+  search: string,
+  includeDisabled = false,
+) {
   const accessToken = useAuthStore((s) => s.accessToken)
   return useInfiniteQuery({
-    queryKey: lessonKeys.infinite(jlptLevelId ?? 0, search.trim()),
+    queryKey: lessonKeys.infinite(jlptLevelId ?? 0, search.trim(), includeDisabled),
     queryFn: ({ pageParam }) =>
       lessonService.page({
         pageNumber: pageParam,
@@ -28,6 +32,7 @@ export function useLessonsInfiniteQuery(jlptLevelId: number | null, search: stri
         filter: {
           jlptLevelId: jlptLevelId!,
           search: search.trim() || undefined,
+          includeDisabled,
         },
       }),
     initialPageParam: 1,
@@ -65,29 +70,41 @@ export function useCreateLessonMutation() {
 }
 
 export function useUpdateLessonMutation() {
+  const queryClient = useQueryClient()
   const invalidate = useInvalidateLessons()
   return useMutation({
     mutationFn: ({ id, payload }: { id: number; payload: UpdateLessonPayload }) =>
       lessonService.update(id, payload),
-    onSuccess: invalidate,
+    onSuccess: (updated, { id }) => {
+      queryClient.setQueryData(lessonKeys.detail(id), updated)
+      invalidate()
+    },
   })
 }
 
 export function useSetLessonPublishedMutation() {
+  const queryClient = useQueryClient()
   const invalidate = useInvalidateLessons()
   return useMutation({
     mutationFn: ({ id, published }: { id: number; published: boolean }) =>
       lessonService.setPublished(id, published),
-    onSuccess: invalidate,
+    onSuccess: (updated, { id }) => {
+      queryClient.setQueryData(lessonKeys.detail(id), updated)
+      invalidate()
+    },
   })
 }
 
 export function useSaveLessonContentMutation() {
+  const queryClient = useQueryClient()
   const invalidate = useInvalidateLessons()
   return useMutation({
     mutationFn: ({ id, payload }: { id: number; payload: SaveLessonContentPayload }) =>
       lessonService.saveContent(id, payload),
-    onSuccess: invalidate,
+    onSuccess: (updated, { id }) => {
+      queryClient.setQueryData(lessonKeys.detail(id), updated)
+      invalidate()
+    },
   })
 }
 
@@ -115,10 +132,35 @@ export function useRestoreLessonMutation() {
   })
 }
 
+export function usePermanentDeleteLessonMutation() {
+  const invalidate = useInvalidateLessons()
+  return useMutation({
+    mutationFn: (id: number) => lessonService.permanentDelete(id),
+    onSuccess: invalidate,
+  })
+}
+
 export function useUploadLessonsBatchMutation() {
   const invalidate = useInvalidateLessons()
   return useMutation({
     mutationFn: (params: { jlptLevelCode: string; file: File }) => lessonService.batchUpload(params),
+    onSuccess: invalidate,
+  })
+}
+
+export function useUploadLessonAudioZipMutation() {
+  const invalidate = useInvalidateLessons()
+  return useMutation({
+    mutationFn: ({ id, file }: { id: number; file: File }) => lessonService.uploadAudioZip(id, file),
+    onSuccess: invalidate,
+  })
+}
+
+export function useUploadLevelLessonsAudioZipMutation() {
+  const invalidate = useInvalidateLessons()
+  return useMutation({
+    mutationFn: ({ jlptLevelCode, file }: { jlptLevelCode: string; file: File }) =>
+      lessonService.uploadLevelAudioZip(jlptLevelCode, file),
     onSuccess: invalidate,
   })
 }

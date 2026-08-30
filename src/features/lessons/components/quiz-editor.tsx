@@ -1,14 +1,22 @@
 import { Choice } from '@/components/common/choice'
-import { Field } from '@/components/common/field'
+import { Field, FieldRow } from '@/components/common/field'
 import { ItemCard, ItemHead } from '@/components/common/item-card'
 import { DashedButton } from '@/components/ui/dashed-button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { AudioSourceSelector } from '@/components/audio/audio-source-selector'
+import { type AudioSourceType } from '@/shared/services/lesson.service'
 
 export interface QuizDraft {
   key: string
   mondai: string
   prompt: string
+  audioUrl: string | null
+  audioFilename: string | null
+  aiAudioUrl?: string | null
+  aiAudioFilename?: string | null
+  audioSourceType?: AudioSourceType | null
+  transcript: string
   choices: Array<{ key: string; choiceText: string; correct: boolean }>
   explainMm: string
   explainEn: string
@@ -63,13 +71,22 @@ export function QuizEditor({ items, onChange }: QuizEditorProps) {
               ✕
             </button>
           </ItemHead>
-          <Field label="Group label (mondai)" className="mb-[10px]">
-            <Input
-              value={item.mondai}
-              placeholder="もんだい1"
-              onChange={(e) => update(index, { mondai: e.target.value })}
-            />
-          </Field>
+          <FieldRow className="mb-[10px]">
+            <Field label="Group label (mondai)">
+              <Input
+                value={item.mondai}
+                placeholder="もんだい1"
+                onChange={(e) => update(index, { mondai: e.target.value })}
+              />
+            </Field>
+            <Field label="Audio Filename (ZIP stem)">
+              <Input
+                value={item.audioFilename ?? ''}
+                placeholder="n5_l01_q01.mp3"
+                onChange={(e) => update(index, { audioFilename: e.target.value || null })}
+              />
+            </Field>
+          </FieldRow>
           <Field label="Sentence (use ＿＿ for blank)" className="mb-[10px]">
             <Input
               value={item.prompt}
@@ -77,6 +94,26 @@ export function QuizEditor({ items, onChange }: QuizEditorProps) {
               onChange={(e) => update(index, { prompt: e.target.value })}
             />
           </Field>
+          <Field label="Listening Transcript (optional)" className="mb-[10px]">
+            <Textarea
+              value={item.transcript}
+              rows={2}
+              placeholder="こんにちは。わたしは たなかです。"
+              onChange={(e) => update(index, { transcript: e.target.value })}
+            />
+          </Field>
+          <div className="mb-[10px]">
+            <AudioSourceSelector
+              value={item.audioSourceType}
+              onChange={(audioSourceType) => update(index, { audioSourceType })}
+              transcript={item.transcript || item.prompt}
+              audioUrl={item.audioUrl}
+              aiAudioUrl={item.aiAudioUrl}
+              onAiAudioGenerated={({ url, filename }) =>
+                update(index, { aiAudioUrl: url, aiAudioFilename: filename, audioSourceType: 'AI_GENERATED' })
+              }
+            />
+          </div>
           <div className="grid grid-cols-2 gap-[10px]">
             {item.choices.map((choice, cIndex) => (
               <Choice
@@ -131,6 +168,9 @@ export function QuizEditor({ items, onChange }: QuizEditorProps) {
               key: newKey(),
               mondai: '',
               prompt: '',
+              audioUrl: null,
+              audioFilename: null,
+              transcript: '',
               choices: [
                 { key: newKey(), choiceText: '', correct: true },
                 { key: newKey(), choiceText: '', correct: false },

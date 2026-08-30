@@ -22,12 +22,19 @@ export interface ChoiceDto {
   correct: boolean
 }
 
+export type AudioSourceType = 'AUDIO_FILE' | 'AI_GENERATED' | 'TTS'
+
 export interface VocabDto {
   id: number | null
   word: string
+  reading?: string | null
   mmMeaning: string | null
   enMeaning: string | null
   audioUrl: string | null
+  audioFilename?: string | null
+  aiAudioUrl?: string | null
+  aiAudioFilename?: string | null
+  audioSourceType?: AudioSourceType | null
 }
 
 export interface GrammarExampleDto {
@@ -35,6 +42,10 @@ export interface GrammarExampleDto {
   japaneseText: string
   mmTranslation: string | null
   audioUrl: string | null
+  audioFilename?: string | null
+  aiAudioUrl?: string | null
+  aiAudioFilename?: string | null
+  audioSourceType?: AudioSourceType | null
   sortOrder: number
 }
 
@@ -61,6 +72,12 @@ export interface QuestionDto {
   transEn: string | null
   imageUrl: string | null
   audioUrl: string | null
+  audioFilename?: string | null
+  aiAudioUrl?: string | null
+  aiAudioFilename?: string | null
+  audioSourceType?: AudioSourceType | null
+  transcript?: string | null
+  externalCode?: string | null
   sortOrder: number
 }
 
@@ -96,9 +113,11 @@ export interface UpdateLessonPayload {
 export interface SaveLessonContentPayload {
   vocabs: Array<{
     word: string
+    reading?: string | null
     mmMeaning?: string | null
     enMeaning?: string | null
     audioUrl?: string | null
+    audioFilename?: string | null
   }>
   grammars: Array<{
     pattern: string
@@ -109,6 +128,7 @@ export interface SaveLessonContentPayload {
       japaneseText: string
       mmTranslation?: string | null
       audioUrl?: string | null
+      audioFilename?: string | null
       sortOrder?: number
     }>
   }>
@@ -124,6 +144,9 @@ export interface SaveLessonContentPayload {
     transEn?: string | null
     imageUrl?: string | null
     audioUrl?: string | null
+    audioFilename?: string | null
+    transcript?: string | null
+    externalCode?: string | null
     sortOrder?: number
   }>
 }
@@ -134,6 +157,15 @@ export interface LessonBatchUploadResult {
   skipped: number
   published: number
   lessonIds: number[]
+}
+
+export interface LessonAudioZipResult {
+  matched: number
+  uploaded: number
+  matchedDetails?: string[]
+  unmatchedFiles: string[]
+  unmatchedQuestions: string[]
+  errors: string[]
 }
 
 async function unwrap<T>(promise: Promise<{ data: ApiResponse<T> }>): Promise<T> {
@@ -158,6 +190,7 @@ export const lessonService = {
     filter: {
       jlptLevelId: number
       search?: string
+      includeDisabled?: boolean
     }
   }) {
     return unwrapPage(
@@ -169,6 +202,7 @@ export const lessonService = {
         filter: {
           jlptLevelId: request.filter.jlptLevelId,
           search: request.filter.search?.trim() || undefined,
+          includeDisabled: request.filter.includeDisabled ?? false,
         },
       }),
     )
@@ -208,10 +242,43 @@ export const lessonService = {
     return unwrap(http.post<ApiResponse<LessonDto>>(`/api/lessons/${id}/restore`))
   },
 
+  permanentDelete(id: number) {
+    return unwrap(http.delete<ApiResponse<void>>(`/api/lessons/${id}/permanent`))
+  },
+
   batchUpload(params: { jlptLevelCode: string; file: File }) {
     const formData = new FormData()
     formData.append('file', params.file)
     formData.append('jlptLevelCode', params.jlptLevelCode)
     return unwrap(http.post<ApiResponse<LessonBatchUploadResult>>('/api/lessons/batch-upload', formData))
+  },
+
+  uploadAudioZip(id: number, file: File) {
+    const formData = new FormData()
+    formData.append('file', file)
+    return unwrap(http.post<ApiResponse<LessonAudioZipResult>>(`/api/lessons/${id}/audio-zip`, formData))
+  },
+
+  uploadLevelAudioZip(jlptLevelCode: string, file: File) {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('jlptLevelCode', jlptLevelCode)
+    return unwrap(http.post<ApiResponse<LessonAudioZipResult>>('/api/lessons/batch-audio-zip', formData))
+  },
+}
+
+export interface GenerateAiAudioResponse {
+  url: string
+  originalFilename?: string
+  filename?: string
+}
+
+export const audioService = {
+  async generateAiDialogueAudio(transcript: string, targetFilename?: string): Promise<GenerateAiAudioResponse> {
+    const res = await http.post<ApiResponse<GenerateAiAudioResponse>>('/api/admin/audio/generate-ai-dialogue', {
+      transcript,
+      targetFilename,
+    })
+    return res.data.data
   },
 }
