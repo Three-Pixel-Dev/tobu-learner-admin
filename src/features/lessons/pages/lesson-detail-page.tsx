@@ -228,7 +228,7 @@ export function LessonDetailPage() {
           </>
         }
         confirmLabel="Delete Permanently"
-        confirmVariant="destructive"
+        tone="danger"
         busy={permanentDeleteMutation.isPending}
         onConfirm={async () => {
           try {

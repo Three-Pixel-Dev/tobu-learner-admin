@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { audioService, type AudioSourceType } from '@/shared/services/lesson.service'
 
 interface AudioSourceSelectorProps {
