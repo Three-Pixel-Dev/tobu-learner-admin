@@ -192,24 +192,6 @@ export function ProfileSecurityForm({ onSaved }: ProfileSecurityFormProps) {
           </div>
         </form>
       </Panel>
-
-      <Panel className="p-[26px]">
-        <PanelTitle>Two-factor authentication</PanelTitle>
-        <p className="mb-[20px] mt-[4px] text-[12.5px] text-muted-foreground">
-          Add an extra layer of security to your admin account.
-        </p>
-        <div className="flex flex-wrap items-center justify-between gap-[16px]">
-          <div>
-            <div className="text-[14px] font-semibold">2FA is currently off</div>
-            <div className="mt-[2px] max-w-[440px] text-[12.5px] text-muted-foreground">
-              We recommend enabling this since your role can publish content and manage user accounts.
-            </div>
-          </div>
-          <Button type="button" variant="ghost" disabled title="Coming soon">
-            Enable 2FA
-          </Button>
-        </div>
-      </Panel>
     </div>
   )
 }

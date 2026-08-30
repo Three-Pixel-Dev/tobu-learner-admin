@@ -6,14 +6,12 @@ import { Toast } from '@/components/common/toast'
 import { ProfileGeneralForm } from '@/features/profile/components/profile-general-form'
 import { ProfileHeaderCard } from '@/features/profile/components/profile-header-card'
 import { ProfileSecurityForm } from '@/features/profile/components/profile-security-form'
-import { ProfileSessionsPanel } from '@/features/profile/components/profile-sessions-panel'
 import { ProfileSkeleton } from '@/features/profile/components/profile-skeleton'
 import { useMeQuery } from '@/shared/queries/auth.query'
 
 const TABS = [
   { value: 'general', label: 'General' },
   { value: 'security', label: 'Security' },
-  { value: 'account', label: 'Account' },
 ]
 
 export function ProfilePage() {
@@ -42,7 +40,6 @@ export function ProfilePage() {
 
       {tab === 'general' ? <ProfileGeneralForm me={meQuery.data} onSaved={onSaved} /> : null}
       {tab === 'security' ? <ProfileSecurityForm onSaved={onSaved} /> : null}
-      {tab === 'account' ? <ProfileSessionsPanel /> : null}
 
       <Toast message={toast} onDismiss={() => setToast(null)} />
     </div>
