@@ -511,7 +511,7 @@ export function LessonsPage() {
           ) : null
         }
         confirmLabel="Delete Permanently"
-        confirmVariant="destructive"
+        tone="danger"
         busy={permanentDeleteMutation.isPending}
         onConfirm={() => void handlePermanentDelete()}
         onCancel={() => {
