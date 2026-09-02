@@ -77,11 +77,15 @@ export function ExamBatchUploadModal({
           <p className="font-semibold text-foreground mb-1">Expected Columns (in order):</p>
           <ol className="list-decimal pl-4 space-y-1">
             <li>Question ID (stable Excel key; blank = always insert)</li>
-            <li>Category Code (VOCAB, GRAMMAR, READING, LISTENING)</li>
+            <li>
+              Category Code — <strong>VOCAB</strong> = Orthography tab,{' '}
+              <strong>GRAMMAR</strong> = Kanji reading tab, READING, LISTENING.
+              Merged / blank category cells copy the value from the row above.
+            </li>
             <li>Mondai Title (Group instruction)</li>
             <li>Passage (mainly for Reading)</li>
-            <li>Sentence Structure (mainly for Grammar)</li>
-            <li>Prompt (Question text)</li>
+            <li>Sentence Structure (vocab / kanji stem; wrap the target in __underscores__)</li>
+            <li>Prompt (Instruction / question text)</li>
             <li>Choice 1</li>
             <li>Choice 2</li>
             <li>Choice 3</li>
