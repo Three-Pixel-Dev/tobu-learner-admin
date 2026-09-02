@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
 import { getApiErrorMessage } from '@/app/api/http-client'
@@ -41,18 +41,20 @@ function emptyChoices(keyPrefix: string) {
   ]
 }
 
-function isQuestionReady(q: ExamQuestionDraft) {
-  if (!q.prompt.trim()) return false
-  if (q.categoryCode === 'VOCAB' || q.categoryCode === 'GRAMMAR') {
-    return q.sentenceStructure.trim().length > 0
-  }
-  if (q.categoryCode === 'READING') {
-    return q.passage.trim().length > 0
-  }
-  if (q.categoryCode === 'LISTENING') {
-    return q.transcript.trim().length > 0 || q.audioUrl.trim().length > 0
-  }
-  return true
+/** Keep a question on save unless the card is completely blank. */
+function isPersistable(q: ExamQuestionDraft) {
+  return (
+    q.prompt.trim().length > 0 ||
+    q.sentenceStructure.trim().length > 0 ||
+    q.passage.trim().length > 0 ||
+    q.transcript.trim().length > 0 ||
+    q.audioUrl.trim().length > 0 ||
+    q.choices.some((c) => c.content.trim().length > 0)
+  )
+}
+
+function promptForSave(q: ExamQuestionDraft) {
+  return q.prompt.trim() || q.sentenceStructure.trim() || q.passage.trim() || '—'
 }
 
 export function ExamEditorPage() {
@@ -75,6 +77,7 @@ export function ExamEditorPage() {
   const [hydratedKey, setHydratedKey] = useState<string | null>(null)
   const [uploadModalOpen, setUploadModalOpen] = useState(false)
   const [audioZipModalOpen, setAudioZipModalOpen] = useState(false)
+  const initialTabSet = useRef(false)
 
   const exam = detailQuery.data
   const examHydrateKey = exam
@@ -103,6 +106,7 @@ export function ExamEditorPage() {
             : emptyChoices(key)
         return {
           key,
+          id: q.id,
           externalCode: q.externalCode ?? null,
           categoryCode: normalizeSection(q.categoryCode),
           mondaiTitle: q.mondaiTitle ?? '',
@@ -122,10 +126,13 @@ export function ExamEditorPage() {
       }),
     )
     setHydratedKey(examHydrateKey)
-    const firstWithQuestions = SECTIONS.find((code) =>
-      (exam.questions || []).some((q) => normalizeSection(q.categoryCode) === code),
-    )
-    if (firstWithQuestions) setTab(firstWithQuestions)
+    if (!initialTabSet.current) {
+      const firstWithQuestions = SECTIONS.find((code) =>
+        (exam.questions || []).some((q) => normalizeSection(q.categoryCode) === code),
+      )
+      if (firstWithQuestions) setTab(firstWithQuestions)
+      initialTabSet.current = true
+    }
   }, [exam, examHydrateKey, hydratedKey])
 
   const bySection = useMemo(() => {
@@ -136,7 +143,8 @@ export function ExamEditorPage() {
       LISTENING: [],
     }
     for (const q of questions) {
-      map[q.categoryCode].push(q)
+      const code = normalizeSection(q.categoryCode)
+      map[code].push(q)
     }
     return map
   }, [questions])
@@ -188,11 +196,11 @@ export function ExamEditorPage() {
           totalScore,
           published,
           comingSoon,
-          questions: questions.filter(isQuestionReady).map((q, index) => ({
+          questions: questions.filter(isPersistable).map((q, index) => ({
             externalCode: q.externalCode?.trim() || undefined,
             categoryCode: q.categoryCode,
             mondaiTitle: q.mondaiTitle.trim() || undefined,
-            prompt: q.prompt.trim(),
+            prompt: promptForSave(q),
             sentenceStructure:
               q.categoryCode === 'VOCAB' || q.categoryCode === 'GRAMMAR'
                 ? q.sentenceStructure.trim() || undefined
@@ -332,9 +340,10 @@ export function ExamEditorPage() {
           className="mb-[16px]"
         />
         <ExamQuestionEditor
+          key={tab}
           section={tab}
           items={bySection[tab]}
-          onChange={(items) => setSectionQuestions(tab, items)}
+          onChange={setSectionQuestions}
         />
       </Panel>
 

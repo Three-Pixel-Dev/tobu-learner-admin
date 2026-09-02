@@ -5,7 +5,7 @@ const workbook = xlsx.utils.book_new();
 
 const headers = [
   "Question ID",
-  "Category Code (VOCAB, GRAMMAR, READING, LISTENING)",
+  "Category Code (VOCAB = Orthography, GRAMMAR = Kanji reading, READING, LISTENING)",
   "Mondai Title",
   "Passage",
   "Sentence Structure",
@@ -26,8 +26,8 @@ const headers = [
 
 const data = [
   headers,
-  ["N5-VOCAB-001", "VOCAB", "もんだい１", "", "", "わたしは___です。", "がくせい", "せんせい", "いしゃ", "かいしゃいん", 1, "", "わたしは___です。", "ကျွန်တော်က ကျောင်းသားပါ။", "I am a student.", "", "", ""],
-  ["N5-GRAMMAR-001", "GRAMMAR", "もんだい２", "", "Noun + です", "これ___ほんです。", "は", "が", "を", "に", 1, "", "これ___ほんです。", "ဒါက စာအုပ်ဖြစ်ပါတယ်။", "This is a book.", "", "", ""],
+  ["N5-VOCAB-001", "VOCAB", "もんだい２ ・ Orthography", "", "わたしは __学生__ です。", "___ の ことばは ひらがなで どう かきますか。", "がくせい", "せんせい", "いしゃ", "かいしゃいん", 1, "", "がくせい", "ကျွန်တော်က ကျောင်းသားပါ။", "I am a student.", "", "", ""],
+  ["N5-GRAMMAR-001", "GRAMMAR", "もんだい１ ・ Kanji reading", "", "これは __本__ です。", "___ の ことばは どう よみますか。", "ほん", "ぼん", "ぽん", "もと", 1, "", "ほん", "ဒါက စာအုပ်ဖြစ်ပါတယ်။", "This is a book.", "", "", ""],
   ["N5-READING-001", "READING", "もんだい３", "あしたはあめです。", "", "あしたのてんきは？", "あめ", "はれ", "くもり", "ゆき", 1, "", "", "မနက်ဖြန် မိုးရွာမည်။", "It will rain tomorrow.", "", "", ""],
   ["N5-LISTENING-001", "LISTENING", "もんだい４", "", "", "（Audio playing）男の人と女の人が話しています...", "A", "B", "C", "D", 1, "男：こんにちは。\n女：こんにちは。", "", "", "Man: Hello.\nWoman: Hello.", "", "", "audio1"]
 ];

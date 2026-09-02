@@ -8,6 +8,8 @@ import type { ExamSectionCode } from '@/shared/services/exam.service'
 
 export interface ExamQuestionDraft {
   key: string
+  /** Database id when loaded from the server — not shown in UI. */
+  id?: number
   /** Stable Excel / ZIP fallback key — preserved on save, not shown in UI. */
   externalCode?: string | null
   categoryCode: ExamSectionCode
@@ -36,7 +38,7 @@ export interface ExamQuestionDraft {
 interface ExamQuestionEditorProps {
   section: ExamSectionCode
   items: ExamQuestionDraft[]
-  onChange: (items: ExamQuestionDraft[]) => void
+  onChange: (section: ExamSectionCode, items: ExamQuestionDraft[]) => void
 }
 
 function newKey() {
@@ -67,8 +69,12 @@ function emptyChoices() {
 }
 
 export function ExamQuestionEditor({ section, items, onChange }: ExamQuestionEditorProps) {
+  const emit = (next: ExamQuestionDraft[]) => {
+    onChange(section, next)
+  }
+
   const update = (index: number, patch: Partial<ExamQuestionDraft>) => {
-    onChange(items.map((item, i) => (i === index ? { ...item, ...patch } : item)))
+    emit(items.map((item, i) => (i === index ? { ...item, ...patch } : item)))
   }
 
   const updateChoice = (
@@ -76,7 +82,7 @@ export function ExamQuestionEditor({ section, items, onChange }: ExamQuestionEdi
     cIndex: number,
     patch: Partial<ExamQuestionDraft['choices'][number]>,
   ) => {
-    onChange(
+    emit(
       items.map((item, i) => {
         if (i !== qIndex) return item
         const choices = item.choices.map((c, ci) => {
@@ -104,7 +110,7 @@ export function ExamQuestionEditor({ section, items, onChange }: ExamQuestionEdi
               type="button"
               className="cursor-pointer text-destructive"
               aria-label={`Remove question ${index + 1}`}
-              onClick={() => onChange(items.filter((_, i) => i !== index))}
+              onClick={() => emit(items.filter((_, i) => i !== index))}
             >
               ✕
             </button>
@@ -258,7 +264,7 @@ export function ExamQuestionEditor({ section, items, onChange }: ExamQuestionEdi
       <DashedButton
         type="button"
         onClick={() =>
-          onChange([
+          emit([
             ...items,
             {
               key: newKey(),
