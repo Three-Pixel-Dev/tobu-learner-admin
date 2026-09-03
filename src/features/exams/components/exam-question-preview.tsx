@@ -129,7 +129,9 @@ export function ExamQuestionPreview({
       ) : null}
 
       {isListening ? (
-        question.audioUrl ? (
+        question.audioSourceType === 'AI_GENERATED' && question.aiAudioUrl ? (
+          <ListeningPlayer audioUrl={question.aiAudioUrl} />
+        ) : question.audioSourceType !== 'TTS' && question.audioUrl ? (
           <ListeningPlayer audioUrl={question.audioUrl} />
         ) : question.transcript?.trim() ? (
           <ListeningTtsPreview text={question.transcript} />

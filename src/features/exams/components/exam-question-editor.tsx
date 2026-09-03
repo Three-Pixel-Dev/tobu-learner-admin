@@ -1,3 +1,4 @@
+import { AudioSourceSelector } from '@/components/audio/audio-source-selector'
 import { Choice } from '@/components/common/choice'
 import { Field } from '@/components/common/field'
 import { ItemCard, ItemHead } from '@/components/common/item-card'
@@ -5,6 +6,7 @@ import { DashedButton } from '@/components/ui/dashed-button'
 import { Input } from '@/components/ui/input'
 import { AudioSourceField } from '@/features/lessons/components/audio-source-field'
 import type { ExamSectionCode } from '@/shared/services/exam.service'
+import type { AudioSourceType } from '@/shared/services/lesson.service'
 
 export interface ExamQuestionDraft {
   key: string
@@ -25,6 +27,9 @@ export interface ExamQuestionDraft {
   audioUrl: string
   /** Normalized stem for ZIP matching — preserved on save. */
   audioFilename?: string | null
+  aiAudioUrl?: string | null
+  aiAudioFilename?: string | null
+  audioSourceType?: AudioSourceType | null
   /** Spoken dialogue for Browser TTS (and mobile fallback). */
   transcript: string
   furigana: string
@@ -172,15 +177,54 @@ export function ExamQuestionEditor({ section, items, onChange }: ExamQuestionEdi
           ) : null}
 
           {isListening ? (
-            <AudioSourceField
-              className="mb-[10px]"
-              speakText={item.transcript}
-              onSpeakTextChange={(transcript) => update(index, { transcript })}
-              speakTextLabel="Listening text"
-              speakTextPlaceholder="きいて ください。あしたは あめが ふります。…"
-              audioUrl={item.audioUrl || null}
-              onChange={(audioUrl) => update(index, { audioUrl: audioUrl ?? '' })}
-            />
+            <div className="mb-[10px] space-y-3">
+              <Field label="Listening text (dialogue / TTS)">
+                <textarea
+                  value={item.transcript}
+                  rows={3}
+                  placeholder={'男：こんにちは。\n女：こんにちは。あしたは あめが ふります。'}
+                  className="w-full rounded-xl border border-input bg-background px-3 py-2 text-[13px]"
+                  onChange={(e) => update(index, { transcript: e.target.value })}
+                />
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Prefix lines with 男： / 女： for multi-voice AI audio, same as lessons.
+                </p>
+              </Field>
+              <Field label="Audio Filename (Excel / ZIP stem)">
+                <Input
+                  value={item.audioFilename ?? ''}
+                  placeholder="audio1 or n5_exam1_l01"
+                  onChange={(e) => update(index, { audioFilename: e.target.value || null })}
+                />
+              </Field>
+              <AudioSourceField
+                hideLabel
+                uploadOnly
+                speakText={item.transcript}
+                audioUrl={item.audioUrl || null}
+                onChange={(audioUrl) =>
+                  update(index, {
+                    audioUrl: audioUrl ?? '',
+                    audioSourceType: audioUrl ? 'AUDIO_FILE' : item.audioSourceType || 'TTS',
+                  })
+                }
+              />
+              <AudioSourceSelector
+                value={item.audioSourceType || (item.audioUrl ? 'AUDIO_FILE' : 'TTS')}
+                onChange={(audioSourceType) => update(index, { audioSourceType })}
+                transcript={item.transcript}
+                audioUrl={item.audioUrl || null}
+                aiAudioUrl={item.aiAudioUrl}
+                targetFilename={item.audioFilename || item.externalCode || undefined}
+                onAiAudioGenerated={({ url, filename }) =>
+                  update(index, {
+                    aiAudioUrl: url,
+                    aiAudioFilename: filename,
+                    audioSourceType: 'AI_GENERATED',
+                  })
+                }
+              />
+            </div>
           ) : null}
 
           <label className="mb-[8px] block text-[12.5px] font-semibold">
@@ -274,6 +318,10 @@ export function ExamQuestionEditor({ section, items, onChange }: ExamQuestionEdi
               sentenceStructure: '',
               passage: '',
               audioUrl: '',
+              audioFilename: null,
+              aiAudioUrl: null,
+              aiAudioFilename: null,
+              audioSourceType: 'TTS',
               transcript: '',
               furigana: '',
               transMm: '',
