@@ -20,6 +20,8 @@ interface AudioSourceFieldProps {
   className?: string
   /** Hide the "Audio" field label (e.g. inside a table column). */
   hideLabel?: boolean
+  /** File picker only — delivery mode lives in AudioSourceSelector. */
+  uploadOnly?: boolean
 }
 
 export function AudioSourceField({
@@ -31,11 +33,12 @@ export function AudioSourceField({
   onChange,
   className,
   hideLabel = false,
+  uploadOnly = false,
 }: AudioSourceFieldProps) {
   const groupId = useId()
   const inputRef = useRef<HTMLInputElement>(null)
   const retainedUploadUrlRef = useRef<string | null>(audioUrl)
-  const [mode, setMode] = useState<AudioMode>(audioUrl ? 'upload' : 'tts')
+  const [mode, setMode] = useState<AudioMode>(uploadOnly || audioUrl ? 'upload' : 'tts')
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -104,6 +107,7 @@ export function AudioSourceField({
   return (
     <Field label={hideLabel ? undefined : 'Audio'} className={className}>
       <div className="flex flex-col gap-[8px]">
+        {uploadOnly ? null : (
         <div className="flex flex-wrap items-center gap-[14px] text-[12.5px]">
           <label className="inline-flex cursor-pointer items-center gap-[6px]">
             <input type="radio" name={groupId} checked={mode === 'tts'} onChange={selectTts} />
@@ -114,8 +118,9 @@ export function AudioSourceField({
             Upload audio file
           </label>
         </div>
+        )}
 
-        {mode === 'tts' && onSpeakTextChange ? (
+        {!uploadOnly && mode === 'tts' && onSpeakTextChange ? (
           <div>
             <label className="mb-1 block text-[12px] font-semibold text-muted-foreground">
               {speakTextLabel}

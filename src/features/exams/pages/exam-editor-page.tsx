@@ -49,6 +49,7 @@ function isPersistable(q: ExamQuestionDraft) {
     q.passage.trim().length > 0 ||
     q.transcript.trim().length > 0 ||
     q.audioUrl.trim().length > 0 ||
+    Boolean(q.aiAudioUrl?.trim()) ||
     q.choices.some((c) => c.content.trim().length > 0)
   )
 }
@@ -81,7 +82,7 @@ export function ExamEditorPage() {
 
   const exam = detailQuery.data
   const examHydrateKey = exam
-    ? `${exam.id}:${exam.updatedAt}:${exam.questions?.length ?? 0}:${exam.questions?.map((q) => `${q.id}:${q.audioUrl ?? ''}`).join(',') ?? ''}`
+    ? `${exam.id}:${exam.updatedAt}:${exam.questions?.length ?? 0}:${exam.questions?.map((q) => `${q.id}:${q.audioUrl ?? ''}:${q.aiAudioUrl ?? ''}:${q.audioSourceType ?? ''}`).join(',') ?? ''}`
     : null
 
   useEffect(() => {
@@ -115,6 +116,9 @@ export function ExamEditorPage() {
           passage: q.passage ?? '',
           audioUrl: q.audioUrl ?? '',
           audioFilename: q.audioFilename ?? null,
+          aiAudioUrl: q.aiAudioUrl ?? null,
+          aiAudioFilename: q.aiAudioFilename ?? null,
+          audioSourceType: q.audioSourceType ?? (q.audioUrl ? 'AUDIO_FILE' : 'TTS'),
           transcript: q.transcript ?? '',
           furigana: q.furigana ?? '',
           transMm: q.transMm ?? '',
@@ -208,6 +212,13 @@ export function ExamEditorPage() {
             passage: q.categoryCode === 'READING' ? q.passage.trim() || undefined : undefined,
             audioUrl: q.categoryCode === 'LISTENING' ? q.audioUrl.trim() || undefined : undefined,
             audioFilename: q.audioFilename?.trim() || undefined,
+            aiAudioUrl: q.categoryCode === 'LISTENING' ? q.aiAudioUrl?.trim() || undefined : undefined,
+            aiAudioFilename:
+              q.categoryCode === 'LISTENING' ? q.aiAudioFilename?.trim() || undefined : undefined,
+            audioSourceType:
+              q.categoryCode === 'LISTENING'
+                ? q.audioSourceType || (q.audioUrl.trim() ? 'AUDIO_FILE' : 'TTS')
+                : undefined,
             transcript: q.categoryCode === 'LISTENING' ? q.transcript.trim() || undefined : undefined,
             furigana: q.furigana.trim() || undefined,
             transMm: q.transMm.trim() || undefined,

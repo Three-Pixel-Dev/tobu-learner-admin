@@ -1,5 +1,6 @@
 import { http } from '@/app/api/http-client'
 import type { ApiResponse, PageMeta } from '@/app/api/types'
+import type { AudioSourceType } from '@/shared/services/lesson.service'
 
 export type ExamSectionCode = 'VOCAB' | 'GRAMMAR' | 'READING' | 'LISTENING'
 
@@ -22,6 +23,9 @@ export interface ExamQuestionDto {
   prompt: string
   audioUrl?: string
   audioFilename?: string | null
+  aiAudioUrl?: string | null
+  aiAudioFilename?: string | null
+  audioSourceType?: AudioSourceType | null
   transcript?: string
   furigana?: string
   transMm?: string
